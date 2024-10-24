@@ -1,15 +1,17 @@
-import { useState } from 'react';
-import { Button, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Button, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 
-import { FaCameraRotate } from "react-icons/fa6";
+import {Animated} from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 
 import i18n from './translations';
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [permission, requestPermission] = useCameraPermissions();
+  const camera = useRef<CameraView>(null);
 
   if (!permission) {
     return <View />;
@@ -18,7 +20,7 @@ export default function App() {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.message}>{i18n.t("permission")}</Text>
+        <Text style={styles.permission}>{i18n.t("permission")}</Text>
         <Button onPress={requestPermission} title={i18n.t("grant")} />
       </View>
     );
@@ -28,13 +30,26 @@ export default function App() {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
   }
 
+  function takePicture() {
+    camera.current?.takePictureAsync().then((res) => {
+      console.log(res);
+    });
+  }
+
   return (
     <View style={styles.container}>
-      <CameraView style={styles.camera} facing={facing} mirror={true}>
+      <CameraView ref={camera} style={styles.camera} facing={facing} mirror={true}>
         <View style={styles.buttonContainer}>
-          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}>
-            <Text style={styles.text}><FaCameraRotate /></Text>
-          </TouchableOpacity>
+          <View style={styles.button}></View>
+
+          <TouchableOpacity style={styles.button} onPress={takePicture}><View style={styles.iconShot}>
+            <Ionicons name="aperture-outline" size={80} color="#800080" />
+          </View></TouchableOpacity>
+
+          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}><View style={styles.iconFlip}>
+              <Ionicons name="camera-reverse" size={30} color="#ffffff80" />
+          </View></TouchableOpacity>
+
         </View>
       </CameraView>
     </View>
@@ -47,28 +62,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#222222',
     justifyContent: 'center',
   },
-  message: {
+
+  permission: {
     textAlign: 'center',
-    paddingBottom: 10,
+    paddingBottom: 30,
     color: 'white'
   },
+
   camera: {
     flex: 1,
   },
+
   buttonContainer: {
     flex: 1,
     flexDirection: 'row',
-    backgroundColor: 'transparent',
-    margin: 64,
+    margin: 0,
+    marginBottom: 32,
+    alignItems: 'center',
+    backgroundColor: 'transparent'
   },
+
   button: {
     flex: 1,
     alignSelf: 'flex-end',
-    alignItems: 'center',
+    alignItems: 'center'
   },
-  text: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'white',
+
+  iconShot: {
+    borderRadius: 50,
+    backgroundColor: '#80008080'
   },
+
+  iconFlip: {
+    padding: 20
+  }
 });
