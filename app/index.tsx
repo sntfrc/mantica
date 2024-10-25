@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Button, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
 
 import Ionicons from '@expo/vector-icons/Ionicons';
 
@@ -37,17 +38,25 @@ export default function App() {
   }
 
   function takePicture() {
-    setLock(true);
-
-    camera.current?.takePictureAsync().then((res) => {
+    camera.current?.takePictureAsync().then(async (res) => {
       if (res && res.base64) {
-        setReview(true);
-        setPicture(res.base64);
+        if (facing === "front") {
+          let fixed = await manipulateAsync(res.base64,
+            [{ rotate: 180 }, { flip: FlipType.Vertical }],
+            { compress: 1, format: SaveFormat.PNG }
+          );
+          setPicture(fixed.uri);
+        } else {
+          setPicture(res.base64);
+        }
+        setLock(true);
+        return new Promise(x => setTimeout(x, 4000));
       } else {
-        setLock(false);
+        return new Promise(x => null);
       }
+    }).then((data) => {
+      setReview(true);
     });
-
   }
 
   function keepPicture() {
@@ -90,7 +99,7 @@ export default function App() {
 
           <View style={styles.button}>
             {review && <TouchableOpacity style={styles.iconSmallFull} onPress={keepPicture}>
-              <Ionicons name="checkmark" size={30} color="#ffffff80" />
+              <Ionicons name="share" size={30} color="#ffffff" />
             </TouchableOpacity>}
           </View>
 
@@ -98,7 +107,7 @@ export default function App() {
 
           <View style={styles.button}>
             {review && <TouchableOpacity style={styles.iconSmallFull} onPress={backToCamera}>
-              <Ionicons name="refresh" size={30} color="#ffffff80" />
+              <Ionicons name="refresh" size={30} color="#ffffff" />
             </TouchableOpacity>}
           </View>
         </View>
@@ -151,6 +160,6 @@ const styles = StyleSheet.create({
   iconSmallFull: {
     padding: 20,
     borderRadius: 100,
-    backgroundColor: '#20000080'
+    backgroundColor: '#200020d0'
   }
 });
