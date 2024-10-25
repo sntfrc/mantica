@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Button, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+//import { VolumeManager } from 'react-native-volume-manager';
 
 import {Animated} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -35,6 +36,11 @@ export default function App() {
       console.log(res);
     });
   }
+
+  /*VolumeManager.showNativeVolumeUI({ enabled: true });
+  const volumeListener = VolumeManager.addVolumeListener((result) => {
+    takePicture();
+  });*/
 
   return (
     <View style={styles.container}>
