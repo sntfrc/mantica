@@ -38,7 +38,8 @@
       "expo-camera"
     ],
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/mantica-app/"
     },
     "extra": {
       "eas": {

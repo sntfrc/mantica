@@ -1,0 +1,16 @@
+{
+  "short_name": "Mantica",
+  "name": "Mantica",
+  "icons": [
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#290133",
+  "background_color": "#290133"
+}
