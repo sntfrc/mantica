@@ -1,18 +1,23 @@
 import { useRef, useState } from 'react';
-import { Button, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Button, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
-//import { VolumeManager } from 'react-native-volume-manager';
 
-import {Animated} from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import i18n from './translations';
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
+  const [lock, setLock] = useState<boolean>(false);
+  const [review, setReview] = useState<boolean>(false);
+  
+  const [picture, setPicture] = useState<string>("");
+
   const [permission, requestPermission] = useCameraPermissions();
+
   const camera = useRef<CameraView>(null);
+  const still = useRef<View>(null);
 
   if (!permission) {
     return <View />;
@@ -21,8 +26,8 @@ export default function App() {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.permission}>{i18n.t("permission")}</Text>
-        <Button onPress={requestPermission} title={i18n.t("grant")} />
+        <Text style={styles.permission}>{i18n.t('permission')}</Text>
+        <Button onPress={requestPermission} title={i18n.t('grant')} />
       </View>
     );
   }
@@ -32,32 +37,72 @@ export default function App() {
   }
 
   function takePicture() {
+    setLock(true);
+
     camera.current?.takePictureAsync().then((res) => {
-      console.log(res);
+      if (res && res.base64) {
+        setReview(true);
+        setPicture(res.base64);
+      } else {
+        setLock(false);
+      }
+    });
+
+  }
+
+  function keepPicture() {
+    fetch(picture).then((x) => {
+      return x.blob();
+    }).then((x) => {
+      const file = new File([x], 'MadeWithMantica.png', { type: x.type });
+      navigator.share({ files: [file] });
     });
   }
 
-  /*VolumeManager.showNativeVolumeUI({ enabled: true });
-  const volumeListener = VolumeManager.addVolumeListener((result) => {
-    takePicture();
-  });*/
+  function backToCamera() {
+    setReview(false);
+    setLock(false);
+  }
 
   return (
     <View style={styles.container}>
-      <CameraView ref={camera} style={styles.camera} facing={facing} mirror={true}>
+      {!lock && <CameraView ref={camera} style={styles.camera} facing={facing} mirror={true}>
         <View style={styles.buttonContainer}>
+
           <View style={styles.button}></View>
 
-          <TouchableOpacity style={styles.button} onPress={takePicture}><View style={styles.iconShot}>
-            <Ionicons name="aperture-outline" size={80} color="#800080" />
-          </View></TouchableOpacity>
+          <View style={styles.button}>
+            <TouchableOpacity style={styles.iconShot} onPress={takePicture}>
+              <Ionicons name="aperture" size={80} color="#800080" />
+            </TouchableOpacity>
+          </View>
 
-          <TouchableOpacity style={styles.button} onPress={toggleCameraFacing}><View style={styles.iconFlip}>
+          <View style={styles.button}>
+            <TouchableOpacity style={styles.iconSmall} onPress={toggleCameraFacing}>
               <Ionicons name="camera-reverse" size={30} color="#ffffff80" />
-          </View></TouchableOpacity>
-
+            </TouchableOpacity>
+          </View>
         </View>
-      </CameraView>
+      </CameraView>}
+
+      {lock && <ImageBackground style={styles.camera} source={{ uri: picture }} resizeMode="cover">
+        <View style={styles.buttonContainer}>
+
+          <View style={styles.button}>
+            {review && <TouchableOpacity style={styles.iconSmallFull} onPress={keepPicture}>
+              <Ionicons name="checkmark" size={30} color="#ffffff80" />
+            </TouchableOpacity>}
+          </View>
+
+          <View style={styles.button}></View>
+
+          <View style={styles.button}>
+            {review && <TouchableOpacity style={styles.iconSmallFull} onPress={backToCamera}>
+              <Ionicons name="refresh" size={30} color="#ffffff80" />
+            </TouchableOpacity>}
+          </View>
+        </View>
+      </ImageBackground>}
     </View>
   );
 }
@@ -99,7 +144,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#80008080'
   },
 
-  iconFlip: {
-    padding: 20
+  iconSmall: {
+    padding: 20,
+  },
+
+  iconSmallFull: {
+    padding: 20,
+    borderRadius: 100,
+    backgroundColor: '#20000080'
   }
 });
