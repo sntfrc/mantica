@@ -7,6 +7,7 @@ import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import i18n from './translations';
+import { getNormalizedStatePath } from 'expo-router/build/LocationProvider';
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
@@ -28,7 +29,7 @@ export default function App() {
     return (
       <View style={styles.container}>
         <Text style={styles.permission}>{i18n.t('permission')}</Text>
-        <Button onPress={requestPermission} title={i18n.t('grant')} />
+        <View style={styles.buttonPerm}><Button onPress={requestPermission} title={i18n.t('grant')} /></View>
       </View>
     );
   }
@@ -40,21 +41,33 @@ export default function App() {
   function takePicture() {
     camera.current?.takePictureAsync().then(async (res) => {
       if (res && res.base64) {
+        var pic = null;
         if (facing === "front") {
           let fixed = await manipulateAsync(res.base64,
             [{ rotate: 180 }, { flip: FlipType.Vertical }],
             { compress: 1, format: SaveFormat.PNG }
           );
-          setPicture(fixed.uri);
+          pic = fixed.uri;
         } else {
-          setPicture(res.base64);
+          pic = res.base64;
         }
+        setPicture(pic);
         setLock(true);
-        return new Promise(x => setTimeout(x, 4000));
+        try {
+          return generate(pic);
+        } catch (e) {
+          console.log(e);
+          return new Promise(x => null);
+        }
       } else {
         return new Promise(x => null);
       }
     }).then((data) => {
+      if (data) {
+        setPicture(data as string);
+      } else {
+        //
+      }
       setReview(true);
     });
   }
@@ -71,6 +84,40 @@ export default function App() {
   function backToCamera() {
     setReview(false);
     setLock(false);
+  }
+
+  async function generate(picture: string) {
+    var getString = 'generate.php?dream=85';
+    console.log(picture);
+    const response = await fetch(getString, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'text/octet-stream'
+        },
+        body: picture
+    });
+
+    if (response.ok) {
+        var genData = await response.json();
+        return convertImageToDataUri(genData.image);
+    } else {
+        console.error('Failed to send photo:', response.statusText);
+        return null;
+    }
+  }
+
+  async function convertImageToDataUri(url: string) {
+    const response = await fetch(url);
+    if (!response.ok) {
+        throw new Error('Failed to fetch image: ${response.statusText}');
+    }
+    const blob = await response.blob();
+    return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+    });
   }
 
   return (
@@ -122,17 +169,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#222222',
     justifyContent: 'center',
   },
-
   permission: {
     textAlign: 'center',
     paddingBottom: 30,
     color: 'white'
   },
-
+  buttonPerm: {
+    marginLeft: 'auto',
+    marginRight: 'auto'
+  },
   camera: {
     flex: 1,
   },
-
   buttonContainer: {
     flex: 1,
     flexDirection: 'row',
@@ -141,22 +189,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'transparent'
   },
-
   button: {
     flex: 1,
     alignSelf: 'flex-end',
     alignItems: 'center'
   },
-
   iconShot: {
     borderRadius: 50,
     backgroundColor: '#80008080'
   },
-
   iconSmall: {
     padding: 20,
   },
-
   iconSmallFull: {
     padding: 20,
     borderRadius: 100,

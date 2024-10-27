@@ -11,7 +11,8 @@
     "test": "jest --watchAll",
     "lint": "expo lint",
     "postinstall": "npx patch-package",
-    "make": "npx expo export -p web"
+    "make": "npx expo export -p web",
+    "deploy": "cp -ar dist/* /var/www/html/mantica-app"
   },
   "jest": {
     "preset": "jest-expo"
