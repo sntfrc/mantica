@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Button, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
+import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
 import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
 
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -22,16 +22,11 @@ export default function App() {
   const still = useRef<View>(null);
 
   if (!permission) {
-    return <View />;
+    return <View/>
   }
 
   if (!permission.granted) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.permission}>{i18n.t('permission')}</Text>
-        <View style={styles.buttonPerm}><Button onPress={requestPermission} title={i18n.t('grant')} /></View>
-      </View>
-    );
+    requestPermission();
   }
 
   function toggleCameraFacing() {
