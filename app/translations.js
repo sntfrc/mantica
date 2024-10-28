@@ -4,13 +4,9 @@ import { I18n } from "i18n-js";
 
 const i18n = new I18n({
     en: {
-        permission: "Mantica needs camera access",
-        grant: "Make it so"
     },
 
     it: {
-        permission: "Mantica utilizza la fotocamera",
-        grant: "Così sia"
     },
 });
 

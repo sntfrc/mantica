@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Button, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Button, Easing, ImageBackground, StyleSheet, Text, Touchable, TouchableOpacity, View } from 'react-native';
 
 import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
 import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
@@ -30,18 +30,35 @@ export default function App() {
   }
 
   if (!permission.granted) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.permission}>{i18n.t("permission")}</Text>
-        <View style={styles.buttonPerm}>
-          <Button onPress={requestPermission} title={i18n.t("grant")} />
-        </View>
-      </View>
-    );
+    requestPermission();
   }
 
   function toggleCameraFacing() {
     setFacing(current => (current === 'back' ? 'front' : 'back'));
+  }
+
+  function editPrompt() {
+    var def = "";
+    var dream = localStorage.getItem("dream");
+    var custom = localStorage.getItem("custom");
+    if (dream) {
+      def = def + dream + ":";
+    }
+    if (custom) {
+      def = def + custom;
+    }
+    var p = prompt("Prompt?", def)?.split(":", 2);
+    if (p && p.length == 2) {
+      localStorage.setItem("dream", p[0]);
+      localStorage.setItem("custom", p[1]);
+    } else if (p && p[0] != "") {
+      localStorage.removeItem("dream");
+      localStorage.setItem("custom", p[0]);
+    } else {
+      localStorage.removeItem("dream");
+      localStorage.removeItem("custom");
+    }
+    window.location.reload();
   }
 
   function takePicture() {
@@ -101,7 +118,17 @@ export default function App() {
   }
 
   async function generate(picture: string) {
-    var getString = 'generate.php?dream=85';
+    var getString = 'generate.php?mantica';
+    var dream = localStorage.getItem('dream');
+    if (dream) {
+      getString += '&dream=' + dream;
+    } else {
+      getString += "&dream=85";
+    }
+    var custom = localStorage.getItem('custom');
+    if (custom) {
+      getString += '&custom=' + encodeURIComponent(custom);
+    }
     const response = await fetch(getString, {
         method: 'POST',
         headers: {
@@ -139,7 +166,11 @@ export default function App() {
         <CameraView ref={camera} style={styles.camera} facing={facing} mirror={true}>
           <View style={styles.buttonContainer}>
 
-            <View style={styles.button}></View>
+            <View style={styles.button}>
+              <TouchableOpacity style={styles.iconSmall} onPress={editPrompt}>
+                <Ionicons name="color-palette" size={30} color="#ffffff80" />
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.button}>
               <TouchableOpacity style={styles.iconShot} onPress={takePicture}>
@@ -199,15 +230,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#222222',
     justifyContent: 'center',
-  },
-  permission: {
-    textAlign: 'center',
-    paddingBottom: 30,
-    color: 'white'
-  },
-  buttonPerm: {
-    marginLeft: 'auto',
-    marginRight: 'auto'
   },
   camera: {
     flex: 1,

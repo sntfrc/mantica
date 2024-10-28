@@ -80,15 +80,13 @@
     }
 
     if (isset($_GET["dream"])) {
-        $ps = floatval($_GET["dream"]);
-        $ps = pow($ps / 100.0, 2);
-
+        $ps = floatval($_GET["dream"]) / 100.0;
         $image_data = file_get_contents("php://input");
 
         $custom = empty($_GET["custom"]) ? "" : $_GET["custom"];
 
         if (LOG_ENABLED && !str_contains($custom, DISABLE_LOG_COMMAND)) {
-            $decoded = base64_decode(str_replace("data:image/jpeg;base64,", "", $image_data));
+            $decoded = base64_decode(explode(",", $image_data, 2)[1]);
             $filename = date("YmdHis") . "-" . $_SERVER["REMOTE_ADDR"];
             $filename = str_replace(".", "-", $filename);
             $filename = str_replace(":", "-", $filename);
