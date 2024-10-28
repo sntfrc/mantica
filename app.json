@@ -39,7 +39,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "baseUrl": "/mantica-app/"
+      "baseUrl": "/mantica/"
     },
     "extra": {
       "eas": {
