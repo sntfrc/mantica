@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Button, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Button, Easing, ImageBackground, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camera';
 import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
@@ -114,49 +114,62 @@ export default function App() {
         reader.readAsDataURL(blob);
     });
   }
-
+  
   return (
     <View style={styles.container}>
-      {!lock && <CameraView ref={camera} style={styles.camera} facing={facing} mirror={true}>
-        <View style={styles.buttonContainer}>
+      {!lock &&
+        <CameraView ref={camera} style={styles.camera} facing={facing} mirror={true}>
+          <View style={styles.buttonContainer}>
 
-          <View style={styles.button}></View>
+            <View style={styles.button}></View>
 
-          <View style={styles.button}>
-            <TouchableOpacity style={styles.iconShot} onPress={takePicture}>
-              <Ionicons name="aperture" size={80} color="#800080" />
-            </TouchableOpacity>
+            <View style={styles.button}>
+              <TouchableOpacity style={styles.iconShot} onPress={takePicture}>
+                <Ionicons name="aperture" size={80} color="#800080" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.button}>
+              <TouchableOpacity style={styles.iconSmall} onPress={toggleCameraFacing}>
+                <Ionicons name="camera-reverse" size={30} color="#ffffff80" />
+              </TouchableOpacity>
+            </View>
           </View>
+        </CameraView>
+      }
 
-          <View style={styles.button}>
-            <TouchableOpacity style={styles.iconSmall} onPress={toggleCameraFacing}>
-              <Ionicons name="camera-reverse" size={30} color="#ffffff80" />
-            </TouchableOpacity>
-          </View>
-        </View>
-      </CameraView>}
+      {lock && 
+        <Animated.View style={[styles.camera, !review && styles.overlay]}>
+          <ImageBackground style={styles.camera} source={{uri: picture}} resizeMode="cover">
+            <View style={styles.buttonContainer}>
 
-      {lock && <ImageBackground style={styles.camera} source={{ uri: picture }} resizeMode="cover">
-        <View style={styles.buttonContainer}>
+              <View style={styles.button}>
+                {review && <TouchableOpacity style={styles.iconSmallFull} onPress={keepPicture}>
+                  <Ionicons name="share" size={30} color="#ffffff" />
+                </TouchableOpacity>}
+              </View>
 
-          <View style={styles.button}>
-            {review && <TouchableOpacity style={styles.iconSmallFull} onPress={keepPicture}>
-              <Ionicons name="share" size={30} color="#ffffff" />
-            </TouchableOpacity>}
-          </View>
+              <View style={styles.button}></View>
 
-          <View style={styles.button}></View>
-
-          <View style={styles.button}>
-            {review && <TouchableOpacity style={styles.iconSmallFull} onPress={backToCamera}>
-              <Ionicons name="refresh" size={30} color="#ffffff" />
-            </TouchableOpacity>}
-          </View>
-        </View>
-      </ImageBackground>}
+              <View style={styles.button}>
+                {review && <TouchableOpacity style={styles.iconSmallFull} onPress={backToCamera}>
+                  <Ionicons name="refresh" size={30} color="#ffffff" />
+                </TouchableOpacity>}
+              </View>
+            </View>
+          </ImageBackground>
+        </Animated.View>
+      }
     </View>
   );
 }
+
+const opacity = useRef(new Animated.Value(0.5)).current;
+const animateOpacity =  Animated.loop(Animated.sequence([
+  Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: true }),
+  Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+]));
+animateOpacity.start();
 
 const styles = StyleSheet.create({
   container: {
@@ -175,6 +188,9 @@ const styles = StyleSheet.create({
   },
   camera: {
     flex: 1,
+  },
+  overlay: {
+    opacity: opacity
   },
   buttonContainer: {
     flex: 1,
