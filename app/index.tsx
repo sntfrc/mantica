@@ -93,7 +93,6 @@ export default function App() {
 
   async function generate(picture: string) {
     var getString = 'generate.php?dream=85';
-    console.log(picture);
     const response = await fetch(getString, {
         method: 'POST',
         headers: {
