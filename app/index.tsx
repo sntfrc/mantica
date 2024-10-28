@@ -11,9 +11,12 @@ import i18n from './translations';
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
-  const [lock, setLock] = useState<boolean>(false);
-  const [review, setReview] = useState<boolean>(false);
-  const [error, setError] = useState<boolean>(false);
+
+  const [state, setState] = useState({
+    lock: false,
+    review: false,
+    error: false,
+  });
   
   const [picture, setPicture] = useState<string>("");
 
@@ -48,7 +51,7 @@ export default function App() {
           pic = res.base64;
         }
         setPicture(pic);
-        setLock(true);
+        setState((ps) => ({...ps, lock: true}));
         try {
           return generate(pic);
         } catch (e) {
@@ -61,9 +64,9 @@ export default function App() {
     }).then((data) => {
       if (data) {
         setPicture(data as string);
-        setReview(true);
+        setState((ps) => ({...ps, review: true}));
       } else {
-        setError(true);
+        setState((ps) => ({...ps, error: true}));
       }
     });
   }
@@ -78,9 +81,7 @@ export default function App() {
   }
 
   function backToCamera() {
-    setReview(false);
-    setError(false);
-    setLock(false);
+    setState((ps) => ({lock: false, review: false, error: false}));
   }
 
   async function generate(picture: string) {
@@ -119,7 +120,7 @@ export default function App() {
   
   return (
     <View style={styles.container}>
-      {!lock &&
+      {!state.lock &&
         <CameraView ref={camera} style={styles.camera} facing={facing} mirror={true}>
           <View style={styles.buttonContainer}>
 
@@ -140,10 +141,10 @@ export default function App() {
         </CameraView>
       }
 
-      {lock && 
-        <Animated.View style={[styles.camera, (!review && !error) && styles.overlay]}>
+      {state.lock && 
+        <Animated.View style={[styles.camera, (!state.review && !state.error) && styles.overlay]}>
           <ImageBackground style={styles.camera} source={{uri: picture}} resizeMode="cover">
-            {error && 
+            {state.error && 
               <View style={styles.error}>
                 <MaterialCommunityIcons name="wifi-off" size={200} color="#ffffff80" />
               </View>
@@ -151,7 +152,7 @@ export default function App() {
             <View style={styles.buttonContainer}>
 
               <View style={styles.button}>
-                {review && <TouchableOpacity style={styles.iconSmallFull} onPress={keepPicture}>
+                {state.review && <TouchableOpacity style={styles.iconSmallFull} onPress={keepPicture}>
                   <Ionicons name="share" size={30} color="#ffffff" />
                 </TouchableOpacity>}
               </View>
@@ -159,7 +160,7 @@ export default function App() {
               <View style={styles.button}></View>
 
               <View style={styles.button}>
-                {(review || error) && <TouchableOpacity style={styles.iconSmallFull} onPress={backToCamera}>
+                {(state.review || state.error) && <TouchableOpacity style={styles.iconSmallFull} onPress={backToCamera}>
                   <Ionicons name="refresh" size={30} color="#ffffff" />
                 </TouchableOpacity>}
               </View>
