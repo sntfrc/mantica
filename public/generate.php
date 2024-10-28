@@ -11,7 +11,7 @@
     // ini_set('display_errors', 1);
 
     define("LOG_ENABLED", true);
-    define("DISABLE_LOG_COMMAND", "[nolog]");
+    define("DISABLE_LOG_COMMAND", "!");
 
     define("PROMPT_ADDENDUM", "");
     define("NEGATIVE_PROMPT", "nsfw, naked");
