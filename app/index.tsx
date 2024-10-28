@@ -5,14 +5,15 @@ import { CameraView, CameraType, useCameraPermissions, Camera } from 'expo-camer
 import { manipulateAsync, FlipType, SaveFormat } from 'expo-image-manipulator';
 
 import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import i18n from './translations';
-import { getNormalizedStatePath } from 'expo-router/build/LocationProvider';
 
 export default function App() {
   const [facing, setFacing] = useState<CameraType>('back');
   const [lock, setLock] = useState<boolean>(false);
   const [review, setReview] = useState<boolean>(false);
+  const [error, setError] = useState<boolean>(false);
   
   const [picture, setPicture] = useState<string>("");
 
@@ -60,10 +61,10 @@ export default function App() {
     }).then((data) => {
       if (data) {
         setPicture(data as string);
+        setReview(true);
       } else {
-        //
+        setError(true);
       }
-      setReview(true);
     });
   }
 
@@ -78,6 +79,7 @@ export default function App() {
 
   function backToCamera() {
     setReview(false);
+    setError(false);
     setLock(false);
   }
 
@@ -139,8 +141,13 @@ export default function App() {
       }
 
       {lock && 
-        <Animated.View style={[styles.camera, !review && styles.overlay]}>
+        <Animated.View style={[styles.camera, (!review && !error) && styles.overlay]}>
           <ImageBackground style={styles.camera} source={{uri: picture}} resizeMode="cover">
+            {error && 
+              <View style={styles.error}>
+                <MaterialCommunityIcons name="wifi-off" size={200} color="#ffffff80" />
+              </View>
+            }
             <View style={styles.buttonContainer}>
 
               <View style={styles.button}>
@@ -152,7 +159,7 @@ export default function App() {
               <View style={styles.button}></View>
 
               <View style={styles.button}>
-                {review && <TouchableOpacity style={styles.iconSmallFull} onPress={backToCamera}>
+                {(review || error) && <TouchableOpacity style={styles.iconSmallFull} onPress={backToCamera}>
                   <Ionicons name="refresh" size={30} color="#ffffff" />
                 </TouchableOpacity>}
               </View>
@@ -164,10 +171,10 @@ export default function App() {
   );
 }
 
-const opacity = useRef(new Animated.Value(0.5)).current;
+const opacity = useRef(new Animated.Value(1.0)).current;
 const animateOpacity =  Animated.loop(Animated.sequence([
-  Animated.timing(opacity, { toValue: 1, duration: 500, useNativeDriver: true }),
-  Animated.timing(opacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+    Animated.timing(opacity, {toValue: 0.5, duration: 500, easing: Easing.in(Easing.sin), useNativeDriver: true}),
+    Animated.timing(opacity, {toValue: 1.0, duration: 500, easing: Easing.inOut(Easing.sin), useNativeDriver: true})
 ]));
 animateOpacity.start();
 
@@ -191,6 +198,11 @@ const styles = StyleSheet.create({
   },
   overlay: {
     opacity: opacity
+  },
+  error: {
+    flex: 3,
+    justifyContent: 'center',
+    alignItems: 'center'
   },
   buttonContainer: {
     flex: 1,
