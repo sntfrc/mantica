@@ -11,7 +11,6 @@ export default function Root({ children }: PropsWithChildren) {
 
         <link rel="manifest" href="manifest.json" />
         <ScrollViewStyleReset />
-
       </head>
       <body>{children}</body>
     </html>

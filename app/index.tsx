@@ -79,12 +79,21 @@ export default function App() {
   }
 
   function keepPicture() {
-    fetch(picture).then((x) => {
-      return x.blob();
-    }).then((x) => {
-      const file = new File([x], 'MadeWithMantica.png', { type: x.type });
-      navigator.share({ files: [file] });
-    });
+    if (navigator.share) {
+      fetch(picture).then((x) => {
+        return x.blob();
+      }).then((x) => {
+        const file = new File([x], 'MadeWithMantica.png', { type: x.type });
+        navigator.share({ files: [file] });
+      });
+    } else {
+      var link = document.createElement("a");
+      link.download = "MadeWithMantica.png";
+      link.href = picture;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   }
 
   function backToCamera() {
