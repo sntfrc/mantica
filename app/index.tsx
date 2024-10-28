@@ -30,7 +30,14 @@ export default function App() {
   }
 
   if (!permission.granted) {
-    requestPermission();
+    return (
+      <View style={styles.container}>
+        <Text style={styles.permission}>{i18n.t("permission")}</Text>
+        <View style={styles.buttonPerm}>
+          <Button onPress={requestPermission} title={i18n.t("grant")} />
+        </View>
+      </View>
+    );
   }
 
   function toggleCameraFacing() {
