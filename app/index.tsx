@@ -38,6 +38,7 @@ export default function App() {
   }
 
   function editPrompt() {
+    camera.current?.pausePreview();
     var def = "";
     var dream = localStorage.getItem("dream");
     var custom = localStorage.getItem("custom");
@@ -54,11 +55,11 @@ export default function App() {
     } else if (p && p[0] != "") {
       localStorage.removeItem("dream");
       localStorage.setItem("custom", p[0]);
-    } else {
+    } else if (p) {
       localStorage.removeItem("dream");
       localStorage.removeItem("custom");
     }
-    window.location.reload();
+    camera.current?.resumePreview();
   }
 
   function takePicture() {
