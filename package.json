@@ -12,7 +12,7 @@
     "lint": "expo lint",
     "postinstall": "npx patch-package",
     "make": "npx expo export -p web",
-    "deploy": "cp -ar dist/* /var/www/html/mantica"
+    "deploy": "cp -ar dist/* /home/s/sntfrc/public_html/mantica"
   },
   "jest": {
     "preset": "jest-expo"

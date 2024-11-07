@@ -39,7 +39,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "baseUrl": "/mantica/"
+      "baseUrl": "/sntfrc/mantica/"
     },
     "extra": {
       "eas": {
