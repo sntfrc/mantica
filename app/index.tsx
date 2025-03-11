@@ -124,7 +124,7 @@ export default function App() {
     if (dream) {
       getString += '&dream=' + dream;
     } else {
-      getString += "&dream=60";
+      getString += "&dream=73";
     }
     var custom = localStorage.getItem('custom');
     if (custom) {
