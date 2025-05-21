@@ -48,4 +48,4 @@ You can also set the reinterpretation strength between 0.0 and 1.0, where 0.0 is
    port=8073
    logging=false
    ```
-4. Start the server with `.venv/bin/python mantica.py` and open `http://localhost:8073` in your browser.
+4. Start the server with `./run.sh` and open `http://localhost:8073` in your browser.
