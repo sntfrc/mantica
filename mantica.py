@@ -467,5 +467,6 @@ document.getElementById('save').onclick = () => {
 
 if __name__ == '__main__':
     if WAITRESS_LOGGING:
-        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger('waitress')
+        logger.setLevel(logging.INFO)
     serve(app, host=HOST, port=PORT)
