@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mantica</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body, html { margin: 0; height: 100%; font-family: Arial, sans-serif; }
+    #camera { position: relative; width: 100%; height: 100%; }
+    video, img { width: 100%; height: 100%; object-fit: cover; }
+    #processingOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      pointer-events: none;
+      opacity: 0;
+      display: none;
+    }
+    @keyframes fadeToBlack {
+      0%, 100% { opacity: 0.2; }
+      50% { opacity: 0.5; }
+    }
+    .fade-animation {
+      animation: fadeToBlack 1s infinite;
+      display: block;
+    }
+    #controls, #after {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 40px;
+    }
+    #controls button, #after button {
+      background: rgba(128,0,128,0.3);
+      border: none;
+      color: #fffa;
+      width: clamp(50px, 15vw, 80px);
+      height: clamp(50px, 15vw, 80px);
+      border-radius: 50%;
+      font-size: clamp(20px, 6vw, 32px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #controls #capture {
+      background: rgba(128,0,128,0.85);
+      width: clamp(60px, 18vw, 96px);
+      height: clamp(60px, 18vw, 96px);
+      font-size: clamp(30px, 10vw, 50px);
+    }
+    #title { position: absolute; top: 10px; left: 10px; color: white; }
+    @media (max-width: 600px) {
+      #title { display:none; }
+    }
+    #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+    #modalContent {
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+    #modalContent input[type="text"],
+    #modalContent input[type="range"] {
+      color: white;
+      background: #333;
+      border: 1px solid #555;
+      border-radius: 5px;
+    }
+    #modalContent button {
+      background: transparent;
+      border: none;
+      color: white;
+      font-size: 24px;
+    }
+    #modalContent button:hover { opacity: 0.7; cursor: pointer; }
+    #close {
+      position: static;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="title">Mantica Camera</h1>
+  <div id="camera">
+    <video id="video" autoplay playsinline></video>
+    <div id="processingOverlay"></div>
+    <img id="photo" style="display:none"/>
+  </div>
+  <div id="controls">
+    <button id="settings" aria-label="Settings"><i class="fa-solid fa-palette"></i></button>
+    <button id="capture" aria-label="Take Picture"><i class="fa-solid fa-bullseye"></i></button>
+    <button id="switch" aria-label="Switch Camera"><i class="fa-solid fa-camera-rotate"></i></button>
+  </div>
+
+  <div id="after" style="display:none">
+    <button id="save" aria-label="Save"><i class="fa-solid fa-download"></i></button>
+    <button id="back" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button>
+  </div>
+  <div id="promptCaption" style="display:none;position:absolute;bottom:5px;left:0;right:0;color:white;text-align:center;font-size:12px;opacity:0.8;"></div>
+
+  <div id="modal">
+    <div id="modalContent">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="text" id="prompt" placeholder="Prompt" style="flex:1">
+        <button id="reset" aria-label="Reset"><i class="fa-solid fa-rotate-left"></i></button>
+        <button id="close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="range" id="strength" min="0" max="1" step="0.01" value="0.73" style="flex:1">
+        <span id="strengthVal">0.73</span>
+      </div>
+    </div>
+  </div>
+
+<script>
+let video = document.getElementById('video');
+let photo = document.getElementById('photo');
+let overlay = document.getElementById('processingOverlay');
+let stream;
+let facing = 'environment';
+let promptInput = document.getElementById('prompt');
+let strengthInput = document.getElementById('strength');
+let strengthVal = document.getElementById('strengthVal');
+let promptCaption = document.getElementById('promptCaption');
+
+promptInput.value = localStorage.getItem('mantica_prompt') || '';
+strengthInput.value = localStorage.getItem('mantica_strength') || '0.73';
+strengthVal.textContent = strengthInput.value;
+
+function isMobile() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+async function startCamera() {
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+  }
+  stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: facing}});
+  video.srcObject = stream;
+  await video.play();
+}
+
+startCamera();
+if (isMobile() && document.documentElement.requestFullscreen) {
+  document.documentElement.requestFullscreen().catch(() => {});
+}
+
+document.getElementById('switch').onclick = () => {
+  facing = facing === 'environment' ? 'user' : 'environment';
+  startCamera();
+};
+
+document.getElementById('settings').onclick = () => {
+  document.getElementById('modal').style.display = 'flex';
+};
+
+document.getElementById('close').onclick = () => {
+  document.getElementById('modal').style.display = 'none';
+};
+
+document.getElementById('reset').onclick = () => {
+  promptInput.value = '';
+  strengthInput.value = 0.73;
+  strengthVal.textContent = '0.73';
+  localStorage.setItem('mantica_prompt', '');
+  localStorage.setItem('mantica_strength', '0.73');
+};
+
+promptInput.oninput = () => {
+  localStorage.setItem('mantica_prompt', promptInput.value);
+};
+
+strengthInput.oninput = (e) => {
+  strengthVal.textContent = e.target.value;
+  localStorage.setItem('mantica_strength', e.target.value);
+};
+
+document.getElementById('capture').onclick = async () => {
+  overlay.classList.add('fade-animation');
+  document.getElementById('controls').style.display = 'none';
+  document.getElementById('after').style.display = 'none';
+  overlay.style.display = 'block';
+  // Let the DOM update so the buttons disappear before heavy processing
+  await new Promise(requestAnimationFrame);
+  video.pause();
+  let canvas = document.createElement('canvas');
+  const displayWidth = video.clientWidth;
+  const displayHeight = video.clientHeight;
+  canvas.width = displayWidth;
+  canvas.height = displayHeight;
+
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  const elementRatio = displayWidth / displayHeight;
+  const videoRatio = vw / vh;
+
+  let sx = 0, sy = 0, sWidth = vw, sHeight = vh;
+  if (videoRatio > elementRatio) {
+    // Video is wider than the display area; crop the sides
+    sWidth = vh * elementRatio;
+    sx = (vw - sWidth) / 2;
+  } else {
+    // Video is taller than the display area; crop the top and bottom
+    sHeight = vw / elementRatio;
+    sy = (vh - sHeight) / 2;
+  }
+  canvas.getContext('2d').drawImage(
+    video,
+    sx,
+    sy,
+    sWidth,
+    sHeight,
+    0,
+    0,
+    displayWidth,
+    displayHeight
+  );
+  let dataUrl = canvas.toDataURL('image/png');
+  let prompt = promptInput.value;
+  let strength = strengthInput.value;
+
+  try {
+    let res = await fetch('transform', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({image: dataUrl, prompt: prompt, strength: strength})
+    });
+    let json = await res.json();
+    if (!res.ok || json.error) throw new Error(json.error || 'processing error');
+    photo.src = json.image;
+    video.style.display = 'none';
+    photo.style.display = 'block';
+    document.getElementById('after').style.display = 'flex';
+    promptCaption.textContent = json.prompt || '';
+    promptCaption.style.display = json.prompt ? 'block' : 'none';
+  } catch (e) {
+    console.error(e);
+    video.play();
+    document.getElementById('controls').style.display = 'flex';
+  }
+  overlay.classList.remove('fade-animation');
+  overlay.style.display = 'none';
+};
+
+document.getElementById('back').onclick = () => {
+  photo.style.display = 'none';
+  video.style.display = 'block';
+  document.getElementById('after').style.display = 'none';
+  document.getElementById('controls').style.display = 'flex';
+  promptCaption.style.display = 'none';
+  video.play();
+};
+
+document.getElementById('save').onclick = () => {
+  let a = document.createElement('a');
+  a.href = photo.src;
+  const now = new Date();
+  const pad = n => n.toString().padStart(2, '0');
+  const ts =
+    now.getFullYear().toString() +
+    pad(now.getMonth() + 1) +
+    pad(now.getDate()) +
+    '-' +
+    pad(now.getHours()) +
+    pad(now.getMinutes()) +
+    pad(now.getSeconds());
+  a.download = `mantica-${ts}.png`;
+  a.click();
+};
+</script>
+</body>
+</html>
