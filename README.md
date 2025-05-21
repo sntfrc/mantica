@@ -15,6 +15,7 @@ Mantica is a small Flask application that transforms captured images using the R
    r8_token=YOUR_REPLICATE_TOKEN
    host=0.0.0.0
    port=8073
+   logging=false
    ```
 
 2. Start the server with `python mantica.py` and open `http://localhost:8073` in your browser. The script uses the Waitress WSGI server.
