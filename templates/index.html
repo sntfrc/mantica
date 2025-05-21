@@ -104,6 +104,9 @@ document.getElementById('capture').onclick = async () => {
   overlay.classList.add('fade-animation');
   document.getElementById('controls').style.display = 'none';
   document.getElementById('after').style.display = 'none';
+  overlay.style.display = 'block';
+  // Let the DOM update so the buttons disappear before heavy processing
+  await new Promise(requestAnimationFrame);
   video.pause();
   let canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
@@ -113,7 +116,6 @@ document.getElementById('capture').onclick = async () => {
   let prompt = document.getElementById('prompt').value;
   let strength = document.getElementById('strength').value;
 
-  overlay.style.display = 'block';
   try {
     let res = await fetch('/transform', {
       method: 'POST',
