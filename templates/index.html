@@ -29,18 +29,23 @@
       display: block;
     }
     #controls, #after { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; gap: 20px; }
-    #after { bottom: 80px; }
+    #after { bottom: 20px; }
     #controls button, #after button {
-      background: rgba(0,0,0,0.4);
+      background: rgba(128,0,128,0.3);
       border: 2px solid #fff;
       color: #fff;
-      width: 60px;
-      height: 60px;
+      width: clamp(50px, 15vw, 80px);
+      height: clamp(50px, 15vw, 80px);
       border-radius: 50%;
-      font-size: 24px;
+      font-size: clamp(20px, 6vw, 32px);
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+    #capture {
+      background: rgba(128,0,128,0.6);
+      width: clamp(70px, 20vw, 100px);
+      height: clamp(70px, 20vw, 100px);
     }
     #title { position: absolute; top: 10px; left: 10px; color: white; }
     @media (max-width: 600px) {
@@ -58,9 +63,9 @@
     <img id="photo" style="display:none"/>
   </div>
   <div id="controls">
-    <button id="switch" aria-label="Switch Camera"><i class="fa-solid fa-camera-rotate"></i></button>
     <button id="settings" aria-label="Settings"><i class="fa-solid fa-sliders-h"></i></button>
     <button id="capture" aria-label="Take Picture"><i class="fa-regular fa-circle"></i></button>
+    <button id="switch" aria-label="Switch Camera"><i class="fa-solid fa-camera-rotate"></i></button>
   </div>
 
   <div id="after" style="display:none">
