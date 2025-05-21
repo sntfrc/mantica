@@ -9,5 +9,12 @@ Test repository to be used as a playground for the evaluation of different AI co
 
 Mantica is a small Flask application that transforms captured images using the Replicate API.
 
-1. Place your Replicate API token in a file named `r8_token` in the repository root.
-2. Start the server with `python mantica.py` and open `http://localhost:5000` in your browser. The script uses the Waitress WSGI server.
+1. Create a `config` file in the repository root containing:
+
+   ```
+   r8_token=YOUR_REPLICATE_TOKEN
+   host=0.0.0.0
+   port=8073
+   ```
+
+2. Start the server with `python mantica.py` and open `http://localhost:8073` in your browser. The script uses the Waitress WSGI server.

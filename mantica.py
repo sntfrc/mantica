@@ -20,12 +20,29 @@ from waitress import serve
 
 app = Flask(__name__)
 
-# Load Replicate token from file
-TOKEN_PATH = os.path.join(os.path.dirname(__file__), 'r8_token')
+# Load configuration (Replicate token, host and port)
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config')
 REPLICATE_TOKEN = None
-if os.path.exists(TOKEN_PATH):
-    with open(TOKEN_PATH, 'r') as f:
-        REPLICATE_TOKEN = f.read().strip()
+HOST = '0.0.0.0'
+PORT = 8073
+if os.path.exists(CONFIG_PATH):
+    with open(CONFIG_PATH, 'r') as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#') or '=' not in line:
+                continue
+            key, value = line.split('=', 1)
+            key = key.strip()
+            value = value.strip()
+            if key == 'r8_token':
+                REPLICATE_TOKEN = value
+            elif key == 'host':
+                HOST = value
+            elif key == 'port':
+                try:
+                    PORT = int(value)
+                except ValueError:
+                    pass
 
 # Default negative prompt used for image generation
 NEGATIVE_PROMPT = "nsfw, naked"
@@ -445,4 +462,4 @@ document.getElementById('save').onclick = () => {
 """
 
 if __name__ == '__main__':
-    serve(app, host='0.0.0.0', port=8073)
+    serve(app, host=HOST, port=PORT)
