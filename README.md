@@ -40,12 +40,13 @@ You can also set the reinterpretation strength between 0.0 and 1.0, where 0.0 is
 
 ## General setup
 
-1. Run `./setup-venv.sh` to create a Python virtual environment and install dependencies.
-2. Create a `config` file in the repository root containing:
+1. Create and activate a virtual environment, for example in ```.venv```
+2. ```pip install flask replicate requests pillow waitress```
+3. Create a `config` file in the repository root containing, for example:
    ```
    r8_token=YOUR_REPLICATE_TOKEN
    host=0.0.0.0
    port=8073
    logging=false
    ```
-3. Start the server with `venv/bin/python mantica.py` and open `http://localhost:8073` in your browser.
+4. Start the server with `.venv/bin/python mantica.py` and open `http://localhost:8073` in your browser.
