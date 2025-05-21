@@ -131,8 +131,6 @@ def transform():
             else:
                 ip = request.remote_addr or 'unknown'
             ip = ip.replace(':', '_').replace('.', '_')
-            ip = request.remote_addr or 'unknown'
-            ip = ip.replace(':', '_').replace('.', '_')
             filename = f"{timestamp}-{ip}.jpg"
 
             # decode original image
