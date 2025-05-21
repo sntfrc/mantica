@@ -223,7 +223,12 @@ document.getElementById('capture').onclick = async () => {
     sHeight = vw / elementRatio;
     sy = (vh - sHeight) / 2;
   }
-  canvas.getContext('2d').drawImage(
+  const ctx = canvas.getContext('2d');
+  if (facing === 'user') {
+    ctx.translate(displayWidth, 0);
+    ctx.scale(-1, 1);
+  }
+  ctx.drawImage(
     video,
     sx,
     sy,
