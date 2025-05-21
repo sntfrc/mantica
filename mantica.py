@@ -275,7 +275,7 @@ INDEX_HTML = """
 <body>
   <h1 id="title">Mantica Camera</h1>
   <div id="camera">
-    <video id="video" autoplay></video>
+    <video id="video" autoplay playsinline></video>
     <div id="processingOverlay"></div>
     <img id="photo" style="display:none"/>
   </div>
