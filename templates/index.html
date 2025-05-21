@@ -153,11 +153,11 @@ document.getElementById('capture').onclick = async () => {
     photo.src = json.image;
     video.style.display = 'none';
     photo.style.display = 'block';
-    document.getElementById('after').style.display = 'block';
+    document.getElementById('after').style.display = 'flex';
   } catch (e) {
     console.error(e);
     video.play();
-    document.getElementById('controls').style.display = 'block';
+    document.getElementById('controls').style.display = 'flex';
   }
   overlay.classList.remove('fade-animation');
   overlay.style.display = 'none';
@@ -167,7 +167,7 @@ document.getElementById('back').onclick = () => {
   photo.style.display = 'none';
   video.style.display = 'block';
   document.getElementById('after').style.display = 'none';
-  document.getElementById('controls').style.display = 'block';
+  document.getElementById('controls').style.display = 'flex';
   video.play();
 };
 
