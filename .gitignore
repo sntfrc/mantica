@@ -1,2 +1,4 @@
-r8_token
+.DS_Store
 .venv/
+r8_token
+logs/
