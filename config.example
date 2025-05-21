@@ -1,3 +1,4 @@
 r8_token=YOUR_REPLICATE_TOKEN
 host=0.0.0.0
 port=8073
+logging=false

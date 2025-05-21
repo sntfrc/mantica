@@ -12,6 +12,7 @@ import base64
 import re
 import replicate
 import requests
+import logging
 from datetime import datetime
 from io import BytesIO
 from flask import Flask, render_template_string, request, jsonify
@@ -25,6 +26,7 @@ CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config')
 REPLICATE_TOKEN = None
 HOST = '0.0.0.0'
 PORT = 8073
+WAITRESS_LOGGING = False
 if os.path.exists(CONFIG_PATH):
     with open(CONFIG_PATH, 'r') as f:
         for line in f:
@@ -43,6 +45,8 @@ if os.path.exists(CONFIG_PATH):
                     PORT = int(value)
                 except ValueError:
                     pass
+            elif key == 'logging':
+                WAITRESS_LOGGING = value.lower() == 'true'
 
 # Default negative prompt used for image generation
 NEGATIVE_PROMPT = "nsfw, naked"
@@ -462,4 +466,6 @@ document.getElementById('save').onclick = () => {
 """
 
 if __name__ == '__main__':
+    if WAITRESS_LOGGING:
+        logging.basicConfig(level=logging.INFO)
     serve(app, host=HOST, port=PORT)
