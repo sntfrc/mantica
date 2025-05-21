@@ -45,11 +45,31 @@ def transform():
 
     client = replicate.Client(api_token=REPLICATE_TOKEN)
 
+    # Use BLIP to generate an image caption first
+    caption = client.run(
+        "salesforce/blip",
+        input={"image": image_data_url, "task": "image_captioning"},
+    )
+
+    if isinstance(caption, list):
+        caption = caption[0]
+    caption = caption or ""
+    if caption.lower().startswith("caption:"):
+        caption = caption[len("caption:"):].strip()
+
+    # Append the user prompt to the caption
+    full_prompt = caption
+    if prompt:
+        if full_prompt:
+            full_prompt += ", " + prompt
+        else:
+            full_prompt = prompt
+
     # Parameters tuned similarly to the PHP version
     result = client.run(
         "black-forest-labs/flux-dev",
         input={
-            "prompt": prompt,
+            "prompt": full_prompt,
             "aspect_ratio": "1:1",
             "image": image_data_url,
             "prompt_strength": strength,
