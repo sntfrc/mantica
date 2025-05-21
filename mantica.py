@@ -125,7 +125,7 @@ def transform():
             logs_dir = os.path.join(os.path.dirname(__file__), 'logs')
             os.makedirs(logs_dir, exist_ok=True)
             timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
-            fwd_header = request.headers.get('X-Real-IP', '')
+            fwd_header = request.headers.get('X-Real-Ip', '')
             if fwd_header:
                 ip = fwd_header
             else:
