@@ -69,7 +69,6 @@
       gap: 10px;
       position: relative;
     }
-    #modalContent label { color: white; }
     #modalContent input[type="text"],
     #modalContent input[type="range"] {
       color: white;
@@ -85,9 +84,7 @@
     }
     #modalContent button:hover { opacity: 0.7; cursor: pointer; }
     #close {
-      position: absolute;
-      top: 10px;
-      right: 10px;
+      position: static;
     }
   </style>
 </head>
@@ -111,12 +108,14 @@
 
   <div id="modal">
     <div id="modalContent">
-      <label>Prompt: <input type="text" id="prompt"></label><br>
-      <label>Strength: <input type="range" id="strength" min="0" max="1" step="0.01" value="0.73"></label>
-      <span id="strengthVal">0.73</span><br>
-      <div style="display:flex;gap:10px;justify-content:flex-end;align-items:center;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="text" id="prompt" placeholder="Prompt" style="flex:1">
         <button id="reset" aria-label="Reset"><i class="fa-solid fa-rotate-left"></i></button>
         <button id="close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="range" id="strength" min="0" max="1" step="0.01" value="0.73" style="flex:1">
+        <span id="strengthVal">0.73</span>
       </div>
     </div>
   </div>
@@ -127,6 +126,13 @@ let photo = document.getElementById('photo');
 let overlay = document.getElementById('processingOverlay');
 let stream;
 let facing = 'environment';
+let promptInput = document.getElementById('prompt');
+let strengthInput = document.getElementById('strength');
+let strengthVal = document.getElementById('strengthVal');
+
+promptInput.value = localStorage.getItem('mantica_prompt') || '';
+strengthInput.value = localStorage.getItem('mantica_strength') || '0.73';
+strengthVal.textContent = strengthInput.value;
 
 function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -160,13 +166,20 @@ document.getElementById('close').onclick = () => {
 };
 
 document.getElementById('reset').onclick = () => {
-  document.getElementById('prompt').value = '';
-  document.getElementById('strength').value = 0.73;
-  document.getElementById('strengthVal').textContent = '0.73';
+  promptInput.value = '';
+  strengthInput.value = 0.73;
+  strengthVal.textContent = '0.73';
+  localStorage.setItem('mantica_prompt', '');
+  localStorage.setItem('mantica_strength', '0.73');
 };
 
-document.getElementById('strength').oninput = (e) => {
-  document.getElementById('strengthVal').textContent = e.target.value;
+promptInput.oninput = () => {
+  localStorage.setItem('mantica_prompt', promptInput.value);
+};
+
+strengthInput.oninput = (e) => {
+  strengthVal.textContent = e.target.value;
+  localStorage.setItem('mantica_strength', e.target.value);
 };
 
 document.getElementById('capture').onclick = async () => {
@@ -210,8 +223,8 @@ document.getElementById('capture').onclick = async () => {
     displayHeight
   );
   let dataUrl = canvas.toDataURL('image/png');
-  let prompt = document.getElementById('prompt').value;
-  let strength = document.getElementById('strength').value;
+  let prompt = promptInput.value;
+  let strength = strengthInput.value;
 
   try {
     let res = await fetch('/transform', {
