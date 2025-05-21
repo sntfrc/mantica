@@ -125,11 +125,18 @@ def transform():
             logs_dir = os.path.join(os.path.dirname(__file__), 'logs')
             os.makedirs(logs_dir, exist_ok=True)
             timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
-            # Sanitize the IP address for filesystem compatibility.
-            # Replace both dots and colons so IPv4/IPv6 addresses are safe.
-            ip = (
-                request.remote_addr or 'unknown'
-            ).replace(':', '_').replace('.', '_')
+            # Prefer the client IP from the X-Forwarded-For header if present.
+            # Fall back to the remote address seen by the server. Sanitize the
+            # IP so it is safe for use in filenames by replacing dots and
+            # colons (to support both IPv4 and IPv6 addresses).
+            fwd_header = request.headers.get('X-Forwarded-For', '')
+            if fwd_header:
+                # Use only the first IP in the list, which represents the
+                # original client when behind proxies.
+                ip = fwd_header.split(',')[0].strip()
+            else:
+                ip = request.remote_addr or 'unknown'
+            ip = ip.replace(':', '_').replace('.', '_')
             filename = f"{timestamp}-{ip}.jpg"
 
             # decode original image
