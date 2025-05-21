@@ -11,6 +11,7 @@
     body, html { margin: 0; height: 100%; font-family: Arial, sans-serif; overflow:hidden; touch-action:none; overscroll-behavior: none; }
     #camera { position: relative; width: 100%; height: 100%; }
     video, img { width: 100%; height: 100%; object-fit: cover; }
+    .mirror { transform: scaleX(-1); }
     #processingOverlay {
       position: absolute;
       top: 0;
@@ -151,6 +152,11 @@ async function startCamera() {
   stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: facing}});
   video.srcObject = stream;
   await video.play();
+  if (facing === 'user') {
+    video.classList.add('mirror');
+  } else {
+    video.classList.remove('mirror');
+  }
 }
 
 startCamera();
