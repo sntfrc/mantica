@@ -2,11 +2,13 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <title>Mantica</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    body, html { margin: 0; height: 100%; font-family: Arial, sans-serif; }
+    body, html { margin: 0; height: 100%; font-family: Arial, sans-serif; overflow:hidden; touch-action:none; overscroll-behavior: none; }
     #camera { position: relative; width: 100%; height: 100%; }
     video, img { width: 100%; height: 100%; object-fit: cover; }
     #processingOverlay {
@@ -262,9 +264,7 @@ document.getElementById('back').onclick = () => {
   video.play();
 };
 
-document.getElementById('save').onclick = () => {
-  let a = document.createElement('a');
-  a.href = photo.src;
+document.getElementById('save').onclick = async () => {
   const now = new Date();
   const pad = n => n.toString().padStart(2, '0');
   const ts =
@@ -275,8 +275,25 @@ document.getElementById('save').onclick = () => {
     pad(now.getHours()) +
     pad(now.getMinutes()) +
     pad(now.getSeconds());
-  a.download = `mantica-${ts}.png`;
+
+  const response = await fetch(photo.src);
+  const blob = await response.blob();
+  const file = new File([blob], `mantica-${ts}.png`, { type: 'image/png' });
+
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Mantica image' });
+      return;
+    } catch (err) {
+      console.error('Share failed', err);
+    }
+  }
+
+  let a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = file.name;
   a.click();
+  URL.revokeObjectURL(a.href);
 };
 </script>
 </body>
