@@ -47,7 +47,7 @@ def transform():
 
     # Use BLIP to generate an image caption first
     caption = client.run(
-        "salesforce/blip",
+        "salesforce/blip:2e1dddc8621f72155f24cf2e0adbde548458d3cab9f00c0139eea840d0ac4746",
         input={"image": image_data_url, "task": "image_captioning"},
     )
 
