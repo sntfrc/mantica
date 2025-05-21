@@ -88,7 +88,7 @@ def transform():
     transformed = requests.get(output_url).content
 
     out_b64 = base64.b64encode(transformed).decode('utf-8')
-    return jsonify({'image': 'data:image/png;base64,' + out_b64, 'prompt': prompt})
+    return jsonify({'image': 'data:image/png;base64,' + out_b64, 'prompt': full_prompt})
 
 if __name__ == '__main__':
     app.run(debug=True)
