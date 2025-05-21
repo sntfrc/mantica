@@ -16,13 +16,10 @@ import logging
 from datetime import datetime
 from io import BytesIO
 from flask import Flask, render_template, request, jsonify
-from werkzeug.middleware.proxy_fix import ProxyFix
 from PIL import Image, ImageDraw, ImageFont
 from waitress import serve
 
 app = Flask(__name__, template_folder=os.path.dirname(__file__))
-# Use ProxyFix to trust the first IP in the X-Forwarded-For header.
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1)
 
 # Load configuration (Replicate token, host and port)
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config')
@@ -128,10 +125,6 @@ def transform():
             logs_dir = os.path.join(os.path.dirname(__file__), 'logs')
             os.makedirs(logs_dir, exist_ok=True)
             timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
-            # The ProxyFix middleware has already resolved the client IP from
-            # the X-Forwarded-For header. Sanitize it so it is safe for use in
-            # filenames by replacing dots and colons (to support both IPv4 and
-            # IPv6 addresses).
             ip = request.remote_addr or 'unknown'
             ip = ip.replace(':', '_').replace('.', '_')
             filename = f"{timestamp}-{ip}.jpg"
