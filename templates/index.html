@@ -147,9 +147,37 @@ document.getElementById('capture').onclick = async () => {
   await new Promise(requestAnimationFrame);
   video.pause();
   let canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext('2d').drawImage(video, 0, 0);
+  const displayWidth = video.clientWidth;
+  const displayHeight = video.clientHeight;
+  canvas.width = displayWidth;
+  canvas.height = displayHeight;
+
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  const elementRatio = displayWidth / displayHeight;
+  const videoRatio = vw / vh;
+
+  let sx = 0, sy = 0, sWidth = vw, sHeight = vh;
+  if (videoRatio > elementRatio) {
+    // Video is wider than the display area; crop the sides
+    sWidth = vh * elementRatio;
+    sx = (vw - sWidth) / 2;
+  } else {
+    // Video is taller than the display area; crop the top and bottom
+    sHeight = vw / elementRatio;
+    sy = (vh - sHeight) / 2;
+  }
+  canvas.getContext('2d').drawImage(
+    video,
+    sx,
+    sy,
+    sWidth,
+    sHeight,
+    0,
+    0,
+    displayWidth,
+    displayHeight
+  );
   let dataUrl = canvas.toDataURL('image/png');
   let prompt = document.getElementById('prompt').value;
   let strength = document.getElementById('strength').value;
