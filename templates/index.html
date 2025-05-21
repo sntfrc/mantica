@@ -6,6 +6,26 @@
   <style>
     body { font-family: Arial, sans-serif; margin: 20px; }
     video, img { width: 100%; max-width: 480px; }
+    #camera { position: relative; }
+    #processingOverlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: black;
+      pointer-events: none;
+      opacity: 0;
+      display: none;
+    }
+    @keyframes fadeToBlack {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 0.6; }
+    }
+    .fade-animation {
+      animation: fadeToBlack 2s infinite;
+      display: block;
+    }
     #controls button { margin-right: 10px; }
     #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
     #modalContent { background: white; padding: 20px; }
@@ -15,6 +35,7 @@
   <h1>Mantica Camera</h1>
   <div id="camera">
     <video id="video" autoplay></video>
+    <div id="processingOverlay"></div>
     <img id="photo" style="display:none"/>
   </div>
   <div id="controls">
@@ -41,6 +62,7 @@
 <script>
 let video = document.getElementById('video');
 let photo = document.getElementById('photo');
+let overlay = document.getElementById('processingOverlay');
 let stream;
 let facing = 'environment';
 
@@ -50,6 +72,7 @@ async function startCamera() {
   }
   stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: facing}});
   video.srcObject = stream;
+  await video.play();
 }
 
 startCamera();
@@ -78,6 +101,8 @@ document.getElementById('strength').oninput = (e) => {
 };
 
 document.getElementById('capture').onclick = async () => {
+  overlay.classList.add('fade-animation');
+  video.pause();
   let canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
   canvas.height = video.videoHeight;
@@ -86,22 +111,32 @@ document.getElementById('capture').onclick = async () => {
   let prompt = document.getElementById('prompt').value;
   let strength = document.getElementById('strength').value;
 
-  let res = await fetch('/transform', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({image: dataUrl, prompt: prompt, strength: strength})
-  });
-  let json = await res.json();
-  photo.src = json.image;
-  video.style.display = 'none';
-  photo.style.display = 'block';
-  document.getElementById('after').style.display = 'block';
+  overlay.style.display = 'block';
+  try {
+    let res = await fetch('/transform', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({image: dataUrl, prompt: prompt, strength: strength})
+    });
+    let json = await res.json();
+    if (!res.ok || json.error) throw new Error(json.error || 'processing error');
+    photo.src = json.image;
+    video.style.display = 'none';
+    photo.style.display = 'block';
+    document.getElementById('after').style.display = 'block';
+  } catch (e) {
+    console.error(e);
+    video.play();
+  }
+  overlay.classList.remove('fade-animation');
+  overlay.style.display = 'none';
 };
 
 document.getElementById('discard').onclick = () => {
   photo.style.display = 'none';
   video.style.display = 'block';
   document.getElementById('after').style.display = 'none';
+  video.play();
 };
 
 document.getElementById('save').onclick = () => {
