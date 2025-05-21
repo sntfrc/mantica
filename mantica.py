@@ -13,15 +13,10 @@ if os.path.exists(TOKEN_PATH):
         REPLICATE_TOKEN = f.read().strip()
 
 # Default negative prompt used for image generation
-NEGATIVE_PROMPT = (
-    "blurry, deformed, low quality, bad anatomy, disfigured, poorly drawn"
-)
+NEGATIVE_PROMPT = "nsfw, naked"
 
 # Terms removed from user prompts before sending to the model
-BAN_TERMS = [
-    "nsfw",
-    "nude",
-]
+BAN_TERMS = ["nude", "naked", "blood", "dead", "nsfw", "nude"]
 
 try:
     import replicate
