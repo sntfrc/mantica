@@ -1,7 +1,10 @@
 import os
 import base64
 import re
+from datetime import datetime
+from io import BytesIO
 from flask import Flask, render_template, request, jsonify
+from PIL import Image, ImageDraw, ImageFont
 
 app = Flask(__name__)
 
@@ -35,7 +38,9 @@ def transform():
         return jsonify({'error': 'Replicate library not installed'}), 500
     data = request.get_json()
     image_data_url = data.get('image', '')
-    prompt = data.get('prompt', '')
+    user_prompt = data.get('prompt', '')
+    logging_enabled = '!' not in user_prompt
+    prompt = user_prompt.replace('!', '')
     strength = float(data.get('strength', 0.73))
 
     # Remove banned terms from the prompt
@@ -88,6 +93,55 @@ def transform():
     transformed = requests.get(output_url).content
 
     out_b64 = base64.b64encode(transformed).decode('utf-8')
+
+    if logging_enabled:
+        try:
+            logs_dir = os.path.join(os.path.dirname(__file__), 'logs')
+            os.makedirs(logs_dir, exist_ok=True)
+            timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
+            ip = (request.remote_addr or 'unknown').replace(':', '-')
+            filename = f"{timestamp}-{ip}.jpg"
+
+            # decode original image
+            header, b64data = image_data_url.split(',', 1)
+            orig_bytes = base64.b64decode(b64data)
+            orig_img = Image.open(BytesIO(orig_bytes)).convert('RGB')
+            trans_img = Image.open(BytesIO(transformed)).convert('RGB')
+
+            landscape = orig_img.width >= orig_img.height and trans_img.width >= trans_img.height
+            if landscape:
+                collage_width = max(orig_img.width, trans_img.width)
+                collage_height = orig_img.height + trans_img.height
+                collage = Image.new('RGB', (collage_width, collage_height))
+                collage.paste(orig_img, (0, 0))
+                collage.paste(trans_img, (0, orig_img.height))
+            else:
+                collage_width = orig_img.width + trans_img.width
+                collage_height = max(orig_img.height, trans_img.height)
+                collage = Image.new('RGB', (collage_width, collage_height))
+                collage.paste(orig_img, (0, 0))
+                collage.paste(trans_img, (orig_img.width, 0))
+
+            draw = ImageDraw.Draw(collage)
+            font = ImageFont.load_default()
+            text = full_prompt
+            text_width, text_height = draw.textsize(text, font=font)
+            padding = 5
+            final_img = Image.new(
+                'RGB', (collage_width, collage_height + text_height + 2 * padding), color='black'
+            )
+            final_img.paste(collage, (0, 0))
+            draw = ImageDraw.Draw(final_img)
+            draw.text(
+                ((collage_width - text_width) // 2, collage_height + padding),
+                text,
+                fill='white',
+                font=font,
+            )
+            final_img.save(os.path.join(logs_dir, filename), format='JPEG')
+        except Exception as e:
+            print('Logging failed:', e)
+
     return jsonify({'image': 'data:image/png;base64,' + out_b64, 'prompt': full_prompt})
 
 if __name__ == '__main__':

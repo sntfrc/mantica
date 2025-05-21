@@ -11,4 +11,4 @@ source .venv/bin/activate
 
 # Upgrade pip and install required packages
 pip install --upgrade pip
-pip install flask replicate requests
+pip install flask replicate requests pillow
