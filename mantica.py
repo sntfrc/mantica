@@ -108,7 +108,11 @@ def transform():
             logs_dir = os.path.join(os.path.dirname(__file__), 'logs')
             os.makedirs(logs_dir, exist_ok=True)
             timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
-            ip = (request.remote_addr or 'unknown').replace(':', '-')
+            # Sanitize the IP address for filesystem compatibility.
+            # Replace both dots and colons so IPv4/IPv6 addresses are safe.
+            ip = (
+                request.remote_addr or 'unknown'
+            ).replace(':', '_').replace('.', '_')
             filename = f"{timestamp}-{ip}.jpg"
 
             # decode original image
