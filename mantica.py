@@ -133,7 +133,7 @@ def transform():
 
             draw = ImageDraw.Draw(collage)
             font = ImageFont.load_default()
-            text = full_prompt
+            text = f"{full_prompt} ({strength})" if full_prompt else f"({strength})"
             if hasattr(draw, "textbbox"):
                 bbox = draw.textbbox((0, 0), text, font=font)
                 text_width = bbox[2] - bbox[0]
