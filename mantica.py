@@ -125,7 +125,12 @@ def transform():
             draw = ImageDraw.Draw(collage)
             font = ImageFont.load_default()
             text = full_prompt
-            text_width, text_height = draw.textsize(text, font=font)
+            if hasattr(draw, "textbbox"):
+                bbox = draw.textbbox((0, 0), text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+            else:
+                text_width, text_height = draw.textsize(text, font=font)
             padding = 5
             final_img = Image.new(
                 'RGB', (collage_width, collage_height + text_height + 2 * padding), color='black'
