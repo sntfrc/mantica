@@ -12,7 +12,7 @@ import base64
 import re
 from datetime import datetime
 from io import BytesIO
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template_string, request, jsonify
 from PIL import Image, ImageDraw, ImageFont
 
 app = Flask(__name__)
