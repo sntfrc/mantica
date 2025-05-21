@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Mantica Camera</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    video, img { width: 100%; max-width: 480px; }
+    #controls button { margin-right: 10px; }
+    #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); align-items: center; justify-content: center; }
+    #modalContent { background: white; padding: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Mantica Camera</h1>
+  <div id="camera">
+    <video id="video" autoplay></video>
+    <img id="photo" style="display:none"/>
+  </div>
+  <div id="controls">
+    <button id="switch">Switch Camera</button>
+    <button id="settings">Settings</button>
+    <button id="capture">Take Picture</button>
+  </div>
+
+  <div id="after" style="display:none">
+    <button id="save">Save</button>
+    <button id="discard">Discard</button>
+  </div>
+
+  <div id="modal">
+    <div id="modalContent">
+      <label>Prompt: <input type="text" id="prompt"></label><br>
+      <label>Strength: <input type="range" id="strength" min="0" max="1" step="0.01" value="0.73"></label>
+      <span id="strengthVal">0.73</span><br>
+      <button id="reset">Reset</button>
+      <button id="close">Close</button>
+    </div>
+  </div>
+
+<script>
+let video = document.getElementById('video');
+let photo = document.getElementById('photo');
+let stream;
+let facing = 'environment';
+
+async function startCamera() {
+  if (stream) {
+    stream.getTracks().forEach(t => t.stop());
+  }
+  stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: facing}});
+  video.srcObject = stream;
+}
+
+startCamera();
+
+document.getElementById('switch').onclick = () => {
+  facing = facing === 'environment' ? 'user' : 'environment';
+  startCamera();
+};
+
+document.getElementById('settings').onclick = () => {
+  document.getElementById('modal').style.display = 'flex';
+};
+
+document.getElementById('close').onclick = () => {
+  document.getElementById('modal').style.display = 'none';
+};
+
+document.getElementById('reset').onclick = () => {
+  document.getElementById('prompt').value = '';
+  document.getElementById('strength').value = 0.73;
+  document.getElementById('strengthVal').textContent = '0.73';
+};
+
+document.getElementById('strength').oninput = (e) => {
+  document.getElementById('strengthVal').textContent = e.target.value;
+};
+
+document.getElementById('capture').onclick = async () => {
+  let canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  let dataUrl = canvas.toDataURL('image/png');
+  let prompt = document.getElementById('prompt').value;
+  let strength = document.getElementById('strength').value;
+
+  let res = await fetch('/transform', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({image: dataUrl, prompt: prompt, strength: strength})
+  });
+  let json = await res.json();
+  photo.src = json.image;
+  video.style.display = 'none';
+  photo.style.display = 'block';
+  document.getElementById('after').style.display = 'block';
+};
+
+document.getElementById('discard').onclick = () => {
+  photo.style.display = 'none';
+  video.style.display = 'block';
+  document.getElementById('after').style.display = 'none';
+};
+
+document.getElementById('save').onclick = () => {
+  let a = document.createElement('a');
+  a.href = photo.src;
+  a.download = 'mantica.png';
+  a.click();
+};
+</script>
+</body>
+</html>
