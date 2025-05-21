@@ -413,7 +413,7 @@ document.getElementById('capture').onclick = async () => {
   let strength = strengthInput.value;
 
   try {
-    let res = await fetch('/transform', {
+    let res = await fetch('transform', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({image: dataUrl, prompt: prompt, strength: strength})
