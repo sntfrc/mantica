@@ -46,7 +46,7 @@
 
   <div id="after" style="display:none">
     <button id="save">Save</button>
-    <button id="discard">Discard</button>
+    <button id="back">Back</button>
   </div>
 
   <div id="modal">
@@ -102,6 +102,8 @@ document.getElementById('strength').oninput = (e) => {
 
 document.getElementById('capture').onclick = async () => {
   overlay.classList.add('fade-animation');
+  document.getElementById('controls').style.display = 'none';
+  document.getElementById('after').style.display = 'none';
   video.pause();
   let canvas = document.createElement('canvas');
   canvas.width = video.videoWidth;
@@ -127,15 +129,17 @@ document.getElementById('capture').onclick = async () => {
   } catch (e) {
     console.error(e);
     video.play();
+    document.getElementById('controls').style.display = 'block';
   }
   overlay.classList.remove('fade-animation');
   overlay.style.display = 'none';
 };
 
-document.getElementById('discard').onclick = () => {
+document.getElementById('back').onclick = () => {
   photo.style.display = 'none';
   video.style.display = 'block';
   document.getElementById('after').style.display = 'none';
+  document.getElementById('controls').style.display = 'block';
   video.play();
 };
 
