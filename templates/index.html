@@ -105,6 +105,7 @@
     <button id="save" aria-label="Save"><i class="fa-solid fa-download"></i></button>
     <button id="back" aria-label="Back"><i class="fa-solid fa-arrow-left"></i></button>
   </div>
+  <div id="promptCaption" style="display:none;position:absolute;bottom:5px;left:0;right:0;color:white;text-align:center;font-size:12px;opacity:0.8;"></div>
 
   <div id="modal">
     <div id="modalContent">
@@ -129,6 +130,7 @@ let facing = 'environment';
 let promptInput = document.getElementById('prompt');
 let strengthInput = document.getElementById('strength');
 let strengthVal = document.getElementById('strengthVal');
+let promptCaption = document.getElementById('promptCaption');
 
 promptInput.value = localStorage.getItem('mantica_prompt') || '';
 strengthInput.value = localStorage.getItem('mantica_strength') || '0.73';
@@ -238,6 +240,8 @@ document.getElementById('capture').onclick = async () => {
     video.style.display = 'none';
     photo.style.display = 'block';
     document.getElementById('after').style.display = 'flex';
+    promptCaption.textContent = json.prompt || '';
+    promptCaption.style.display = json.prompt ? 'block' : 'none';
   } catch (e) {
     console.error(e);
     video.play();
@@ -252,6 +256,7 @@ document.getElementById('back').onclick = () => {
   video.style.display = 'block';
   document.getElementById('after').style.display = 'none';
   document.getElementById('controls').style.display = 'flex';
+  promptCaption.style.display = 'none';
   video.play();
 };
 
