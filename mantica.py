@@ -10,10 +10,13 @@
 import os
 import base64
 import re
+import replicate
+import requests
 from datetime import datetime
 from io import BytesIO
 from flask import Flask, render_template_string, request, jsonify
 from PIL import Image, ImageDraw, ImageFont
+from waitress import serve
 
 app = Flask(__name__)
 
@@ -29,13 +32,6 @@ NEGATIVE_PROMPT = "nsfw, naked"
 
 # Terms removed from user prompts before sending to the model
 BAN_TERMS = ["nude", "naked", "blood", "dead", "nsfw", "nude"]
-
-try:
-    import replicate
-    import requests
-except ImportError:
-    replicate = None
-    requests = None
 
 @app.route('/')
 def index():
@@ -449,8 +445,4 @@ document.getElementById('save').onclick = () => {
 """
 
 if __name__ == '__main__':
-    try:
-        from waitress import serve
-    except ImportError:
-        raise SystemExit("waitress is required. Install it with 'pip install waitress'")
     serve(app, host='0.0.0.0', port=5000)
