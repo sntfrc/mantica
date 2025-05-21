@@ -28,8 +28,15 @@
       animation: fadeToBlack 1s infinite;
       display: block;
     }
-    #controls, #after { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; gap: 20px; }
-    #after { bottom: 20px; }
+    #controls, #after {
+      position: absolute;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 40px;
+    }
     #controls button, #after button {
       background: rgba(128,0,128,0.3);
       border: 2px solid #fff;
@@ -44,8 +51,8 @@
     }
     #capture {
       background: rgba(128,0,128,0.6);
-      width: clamp(70px, 20vw, 100px);
-      height: clamp(70px, 20vw, 100px);
+      width: clamp(90px, 25vw, 120px);
+      height: clamp(90px, 25vw, 120px);
     }
     #title { position: absolute; top: 10px; left: 10px; color: white; }
     @media (max-width: 600px) {
