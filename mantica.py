@@ -4,7 +4,7 @@
 # Unauthorized copying, distribution, or use of this software in whole or in part
 # is prohibited without the express written permission of the copyright holder.
 #
-# pip install flask replicate requests pillow
+# pip install flask replicate requests pillow waitress
 #
 
 import os
@@ -449,4 +449,8 @@ document.getElementById('save').onclick = () => {
 """
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    try:
+        from waitress import serve
+    except ImportError:
+        raise SystemExit("waitress is required. Install it with 'pip install waitress'")
+    serve(app, host='0.0.0.0', port=5000)
