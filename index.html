@@ -304,29 +304,62 @@ document.getElementById('save').onclick = async () => {
     pad(now.getSeconds());
 
   const blob = dataURLToBlob(photo.src);
-  const file = new File([blob], `mantica-${ts}.png`, { type: 'image/png' });
+  const fileName = `mantica-${ts}.png`;
 
-  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+  // 1) Try to let the user pick a location (saves to gallery on supported browsers)
+  if (window.showSaveFilePicker) {
     try {
-      await navigator.share({ files: [file], title: 'Mantica image' });
+      const handle = await window.showSaveFilePicker({
+        suggestedName: fileName,
+        types: [
+          { description: 'PNG Image', accept: { 'image/png': ['.png'] } }
+        ]
+      });
+      const writable = await handle.createWritable();
+      await writable.write(blob);
+      await writable.close();
       return;
-    } catch (err) {
-      console.error('Share failed', err);
+    } catch (e) {
+      console.warn('showSaveFilePicker failed', e);
     }
   }
 
-  const url = URL.createObjectURL(blob);
-
-  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-    window.open(url, '_blank');
+  // 2) Fallback to a regular download
+  try {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    if (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone
+    ) {
+      // Direct downloads often fail in standalone mode
+      window.open(url, '_blank');
+    } else {
+      a.click();
+    }
+    URL.revokeObjectURL(url);
     return;
+  } catch (e) {
+    console.warn('Download fallback failed', e);
   }
 
-  let a = document.createElement('a');
-  a.href = url;
-  a.download = file.name;
-  a.click();
-  URL.revokeObjectURL(url);
+  // 3) Last resort: use the share API if available
+  try {
+    const file = new File([blob], fileName, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Mantica image' });
+      return;
+    }
+  } catch (err) {
+    console.error('Share failed', err);
+  }
+
+  // If everything else failed open the image in a new tab
+  const fallbackUrl = URL.createObjectURL(blob);
+  window.open(fallbackUrl, '_blank');
+  URL.revokeObjectURL(fallbackUrl);
 };
 
 function dataURLToBlob(dataURL) {
