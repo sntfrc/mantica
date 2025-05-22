@@ -15,7 +15,7 @@ import requests
 import logging
 from datetime import datetime
 from io import BytesIO
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from PIL import Image, ImageDraw, ImageFont
 from waitress import serve
 
@@ -57,6 +57,18 @@ BAN_TERMS = ["nude", "naked", "blood", "dead", "nsfw", "nude"]
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory(os.path.dirname(__file__), 'manifest.json')
+
+@app.route('/service-worker.js')
+def service_worker():
+    return send_from_directory(os.path.dirname(__file__), 'service-worker.js')
+
+@app.route('/favicon.png')
+def favicon():
+    return send_from_directory(os.path.dirname(__file__), 'favicon.png')
 
 @app.route('/transform', methods=['POST'])
 def transform():
