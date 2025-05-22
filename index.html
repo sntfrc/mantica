@@ -5,10 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
   <title>Mantica</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <style>
-    body, html { margin: 0; height: 100%; font-family: Arial, sans-serif; overflow:hidden; touch-action:none; overscroll-behavior: none; }
+    *, *::before, *::after { -webkit-tap-highlight-color: transparent; }
+    body, html {
+      margin: 0;
+      height: 100%;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+      touch-action: none;
+      overscroll-behavior: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
     #camera { position: relative; width: 100%; height: 100%; }
     video, img { width: 100%; height: 100%; object-fit: cover; }
     .mirror { transform: scaleX(-1); }
@@ -306,6 +322,14 @@ document.getElementById('save').onclick = async () => {
   a.click();
   URL.revokeObjectURL(a.href);
 };
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js').catch(() => {});
+}
+
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('touchmove', e => e.preventDefault(), {passive: false});
+document.addEventListener('gesturestart', e => e.preventDefault());
 </script>
 </body>
 </html>
