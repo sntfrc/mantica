@@ -326,14 +326,26 @@ document.getElementById('save').onclick = async () => {
   const blob = dataURLToBlob(photo.src);
   const fileName = `mantica-${ts}.png`;
 
-  /* TODO: Add code to download the picture.
-   * This should work cross-platform, in all these scenarios:
-      - Desktop browsers;
-      - Android inside Chrome tab;
-      - Android as an installed webapp on home screen;
-      - iOS 15+ in browser tab;
-      - iOS 15+ as standalone webapp on home screen (warning: this is different from the above case).
-  */
+  const file = new File([blob], fileName, { type: blob.type });
+  if (navigator.share) {
+    try {
+      if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: fileName });
+        return;
+      }
+    } catch (e) {
+      console.warn('Share failed, falling back to download', e);
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 function dataURLToBlob(dataURL) {
