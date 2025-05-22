@@ -361,16 +361,17 @@ document.getElementById('save').onclick = async () => {
     const a = document.createElement('a');
     a.href = url;
     a.download = fileName;
-    if (
+    const isStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone
-    ) {
-      // Direct downloads often fail in standalone mode
+      window.navigator.standalone;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    if (isStandalone && !isIOS) {
+      // Android PWAs often fail to download directly
       window.open(url, '_blank');
     } else {
       a.click();
     }
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
     return;
   } catch (e) {
     console.warn('Download fallback failed', e);
