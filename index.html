@@ -347,7 +347,7 @@ document.getElementById('save').onclick = async () => {
   // 2) Try the share API (works well on iOS PWAs)
   try {
     const file = new File([blob], fileName, { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    if (navigator.share) {
       await navigator.share({ files: [file] });
       return;
     }
