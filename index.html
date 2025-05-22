@@ -303,8 +303,7 @@ document.getElementById('save').onclick = async () => {
     pad(now.getMinutes()) +
     pad(now.getSeconds());
 
-  const response = await fetch(photo.src);
-  const blob = await response.blob();
+  const blob = dataURLToBlob(photo.src);
   const file = new File([blob], `mantica-${ts}.png`, { type: 'image/png' });
 
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
@@ -316,12 +315,30 @@ document.getElementById('save').onclick = async () => {
     }
   }
 
+  const url = URL.createObjectURL(blob);
+
+  if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+    window.open(url, '_blank');
+    return;
+  }
+
   let a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
+  a.href = url;
   a.download = file.name;
   a.click();
-  URL.revokeObjectURL(a.href);
+  URL.revokeObjectURL(url);
 };
+
+function dataURLToBlob(dataURL) {
+  const [header, data] = dataURL.split(',');
+  const mime = header.match(/:(.*?);/)[1];
+  const bytes = atob(data);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    arr[i] = bytes.charCodeAt(i);
+  }
+  return new Blob([arr], { type: mime });
+}
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js').catch(() => {});
