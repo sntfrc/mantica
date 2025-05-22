@@ -326,25 +326,6 @@ document.getElementById('save').onclick = async () => {
   const blob = dataURLToBlob(photo.src);
   const fileName = `mantica-${ts}.png`;
 
-  // 1) Try to let the user pick a location (saves to gallery on supported browsers)
-  if (window.showSaveFilePicker) {
-    try {
-      const handle = await window.showSaveFilePicker({
-        suggestedName: fileName,
-        types: [
-          { description: 'PNG Image', accept: { 'image/png': ['.png'] } }
-        ]
-      });
-      const writable = await handle.createWritable();
-      await writable.write(blob);
-      await writable.close();
-      return;
-    } catch (e) {
-      console.warn('showSaveFilePicker failed', e);
-    }
-  }
-
-  // 2) Try the share API (works well on iOS PWAs)
   try {
     const file = new File([blob], fileName, { type: 'image/png' });
     if (navigator.share) {
@@ -354,33 +335,6 @@ document.getElementById('save').onclick = async () => {
   } catch (err) {
     console.error('Share failed', err);
   }
-
-  // 3) Fallback to a regular download
-  try {
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = fileName;
-    const isStandalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      window.navigator.standalone;
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    if (isStandalone && !isIOS) {
-      // Android PWAs often fail to download directly
-      window.open(url, '_blank');
-    } else {
-      a.click();
-    }
-    setTimeout(() => URL.revokeObjectURL(url), 100);
-    return;
-  } catch (e) {
-    console.warn('Download fallback failed', e);
-  }
-
-  // If everything else failed open the image in a new tab
-  const fallbackUrl = URL.createObjectURL(blob);
-  window.open(fallbackUrl, '_blank');
-  URL.revokeObjectURL(fallbackUrl);
 };
 
 function dataURLToBlob(dataURL) {
