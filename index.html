@@ -156,11 +156,15 @@ let facing = 'environment';
 let promptInput = document.getElementById('prompt');
 let strengthInput = document.getElementById('strength');
 let strengthVal = document.getElementById('strengthVal');
+
+function formatStrength(val) {
+  return parseFloat(val).toFixed(2);
+}
 let promptCaption = document.getElementById('promptCaption');
 
 promptInput.value = localStorage.getItem('mantica_prompt') || '';
 strengthInput.value = localStorage.getItem('mantica_strength') || '0.73';
-strengthVal.textContent = strengthInput.value;
+strengthVal.textContent = formatStrength(strengthInput.value);
 
 function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -201,7 +205,7 @@ document.getElementById('close').onclick = () => {
 document.getElementById('reset').onclick = () => {
   promptInput.value = '';
   strengthInput.value = 0.73;
-  strengthVal.textContent = '0.73';
+  strengthVal.textContent = formatStrength(0.73);
   localStorage.setItem('mantica_prompt', '');
   localStorage.setItem('mantica_strength', '0.73');
 };
@@ -211,7 +215,7 @@ promptInput.oninput = () => {
 };
 
 strengthInput.oninput = (e) => {
-  strengthVal.textContent = e.target.value;
+  strengthVal.textContent = formatStrength(e.target.value);
   localStorage.setItem('mantica_strength', e.target.value);
 };
 
