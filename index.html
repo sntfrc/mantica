@@ -344,7 +344,18 @@ document.getElementById('save').onclick = async () => {
     }
   }
 
-  // 2) Fallback to a regular download
+  // 2) Try the share API (works well on iOS PWAs)
+  try {
+    const file = new File([blob], fileName, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: 'Mantica image' });
+      return;
+    }
+  } catch (err) {
+    console.error('Share failed', err);
+  }
+
+  // 3) Fallback to a regular download
   try {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -363,17 +374,6 @@ document.getElementById('save').onclick = async () => {
     return;
   } catch (e) {
     console.warn('Download fallback failed', e);
-  }
-
-  // 3) Last resort: use the share API if available
-  try {
-    const file = new File([blob], fileName, { type: 'image/png' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'Mantica image' });
-      return;
-    }
-  } catch (err) {
-    console.error('Share failed', err);
   }
 
   // If everything else failed open the image in a new tab
