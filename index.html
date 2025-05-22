@@ -348,7 +348,7 @@ document.getElementById('save').onclick = async () => {
   try {
     const file = new File([blob], fileName, { type: 'image/png' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: 'Mantica image' });
+      await navigator.share({ files: [file] });
       return;
     }
   } catch (err) {
