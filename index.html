@@ -327,9 +327,19 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('service-worker.js').catch(() => {});
 }
 
-document.addEventListener('contextmenu', e => e.preventDefault());
-document.addEventListener('touchmove', e => e.preventDefault(), {passive: false});
-document.addEventListener('gesturestart', e => e.preventDefault());
+document.addEventListener('contextmenu', e => {
+  if (!e.target.closest('#modal')) e.preventDefault();
+});
+document.addEventListener(
+  'touchmove',
+  e => {
+    if (!e.target.closest('#modal')) e.preventDefault();
+  },
+  { passive: false }
+);
+document.addEventListener('gesturestart', e => {
+  if (!e.target.closest('#modal')) e.preventDefault();
+});
 </script>
 </body>
 </html>
