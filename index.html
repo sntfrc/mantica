@@ -270,9 +270,18 @@ document.getElementById('capture').onclick = async () => {
     photo.src = json.image;
     video.style.display = 'none';
     photo.style.display = 'block';
-    document.getElementById('after').style.display = 'flex';
+    const afterButtons = document.getElementById('after');
+    afterButtons.style.display = 'flex';
     promptCaption.textContent = json.prompt || '';
-    promptCaption.style.display = json.prompt ? 'block' : 'none';
+    if (json.prompt) {
+      promptCaption.style.display = 'block';
+      await new Promise(requestAnimationFrame);
+      const captionHeight = promptCaption.offsetHeight;
+      afterButtons.style.bottom = `${20 + captionHeight * 0.7}px`;
+    } else {
+      promptCaption.style.display = 'none';
+      afterButtons.style.bottom = '20px';
+    }
   } catch (e) {
     console.error(e);
     video.play();
@@ -285,7 +294,9 @@ document.getElementById('capture').onclick = async () => {
 document.getElementById('back').onclick = () => {
   photo.style.display = 'none';
   video.style.display = 'block';
-  document.getElementById('after').style.display = 'none';
+  const afterButtons = document.getElementById('after');
+  afterButtons.style.display = 'none';
+  afterButtons.style.bottom = '20px';
   document.getElementById('controls').style.display = 'flex';
   promptCaption.style.display = 'none';
   video.play();
