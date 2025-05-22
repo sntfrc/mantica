@@ -1,5 +1,5 @@
 .DS_Store
 .venv/
 config
-logs/
+logs
 nohup.out
