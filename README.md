@@ -7,7 +7,7 @@ Inspired by the idea of looking at the world through the lens of machines, Manti
 The web app has been mainly tested on iOS and works reasonably well on Android, but could be improved.
 
 ## Try it live
-Enjoy the demo at [https://freeshell.de/sntfrc/mantica/](https://freeshell.de/sntfrc/mantica/)
+Enjoy the demo at [https://freeshell.de/sntfrc/mantica/](https://freeshell.de/sntfrc/mantica/)!
 
 Please note that this public instance will temporarily log your original pictures for security purposes.
 
