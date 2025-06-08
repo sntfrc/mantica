@@ -107,11 +107,6 @@
     #close {
       position: static;
     }
-    #strengthVal {
-      width: 4ch;
-      display: inline-block;
-      text-align: right;
-    }
   </style>
 </head>
 <body>
@@ -140,10 +135,6 @@
         <button id="reset" aria-label="Reset"><i class="fa-solid fa-rotate-left"></i></button>
         <button id="close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <input type="range" id="strength" min="0" max="1" step="0.01" value="0.73" style="flex:1">
-        <span id="strengthVal">0.73</span>
-      </div>
     </div>
   </div>
 
@@ -154,17 +145,10 @@ let overlay = document.getElementById('processingOverlay');
 let stream;
 let facing = 'environment';
 let promptInput = document.getElementById('prompt');
-let strengthInput = document.getElementById('strength');
-let strengthVal = document.getElementById('strengthVal');
 
-function formatStrength(val) {
-  return parseFloat(val).toFixed(2);
-}
 let promptCaption = document.getElementById('promptCaption');
 
 promptInput.value = localStorage.getItem('mantica_prompt') || '';
-strengthInput.value = localStorage.getItem('mantica_strength') || '0.73';
-strengthVal.textContent = formatStrength(strengthInput.value);
 
 function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -206,19 +190,11 @@ document.getElementById('close').onclick = () => {
 
 document.getElementById('reset').onclick = () => {
   promptInput.value = '';
-  strengthInput.value = 0.73;
-  strengthVal.textContent = formatStrength(0.73);
   localStorage.setItem('mantica_prompt', '');
-  localStorage.setItem('mantica_strength', '0.73');
 };
 
 promptInput.oninput = () => {
   localStorage.setItem('mantica_prompt', promptInput.value);
-};
-
-strengthInput.oninput = (e) => {
-  strengthVal.textContent = formatStrength(e.target.value);
-  localStorage.setItem('mantica_strength', e.target.value);
 };
 
 document.getElementById('capture').onclick = async () => {
@@ -268,13 +244,12 @@ document.getElementById('capture').onclick = async () => {
   );
   let dataUrl = canvas.toDataURL('image/png');
   let prompt = promptInput.value;
-  let strength = strengthInput.value;
 
   try {
     let res = await fetch('transform', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({image: dataUrl, prompt: prompt, strength: strength})
+      body: JSON.stringify({image: dataUrl, prompt: prompt})
     });
     let json = await res.json();
     if (!res.ok || json.error) throw new Error(json.error || 'processing error');

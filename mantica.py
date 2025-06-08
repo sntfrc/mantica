@@ -19,6 +19,8 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from PIL import Image, ImageDraw, ImageFont
 from waitress import serve
 
+DEFAULT_PROMPT = "make it look more like a professionally made picture"
+
 app = Flask(__name__, template_folder=os.path.dirname(__file__))
 
 # Load configuration (Replicate token, host and port)
@@ -79,7 +81,6 @@ def transform():
     user_prompt = data.get('prompt', '')
     logging_enabled = '!' not in user_prompt
     prompt = user_prompt.replace('!', '')
-    strength = float(data.get('strength', 0.73))
 
     # Remove banned terms from the prompt
     for term in BAN_TERMS:
@@ -88,41 +89,16 @@ def transform():
 
     client = replicate.Client(api_token=REPLICATE_TOKEN)
 
-    # Use BLIP to generate an image caption first
-    caption = client.run(
-        "salesforce/blip:2e1dddc8621f72155f24cf2e0adbde548458d3cab9f00c0139eea840d0ac4746",
-        input={"image": image_data_url, "task": "image_captioning"},
-    )
-
-    if isinstance(caption, list):
-        caption = caption[0]
-    caption = caption or ""
-    if caption.lower().startswith("caption:"):
-        caption = caption[len("caption:"):].strip()
-
-    # Append the user prompt to the caption
-    full_prompt = caption
-    if prompt:
-        if full_prompt:
-            full_prompt += ", " + prompt
-        else:
-            full_prompt = prompt
+    full_prompt = prompt if prompt else DEFAULT_PROMPT
 
     # Parameters tuned similarly to the PHP version
     result = client.run(
-        "black-forest-labs/flux-dev",
+        "black-forest-labs/flux-kontext-pro",
         input={
             "prompt": full_prompt,
-            "aspect_ratio": "1:1",
-            "image": image_data_url,
-            "prompt_strength": strength,
-            "num_outputs": 1,
-            "num_inference_steps": 28,
-            "guidance": 3.5,
+            "input_image": image_data_url,
+            "safety_tolerance": 6,
             "output_format": "png",
-            "output_quality": 100,
-            "negative_prompt": NEGATIVE_PROMPT,
-            "go_fast": True,
         },
     )
 
@@ -167,7 +143,7 @@ def transform():
 
             draw = ImageDraw.Draw(collage)
             font = ImageFont.load_default()
-            text = f"{full_prompt} ({strength})" if full_prompt else f"({strength})"
+            text = full_prompt if full_prompt != DEFAULT_PROMPT else "(no prompt)"
             if hasattr(draw, "textbbox"):
                 bbox = draw.textbbox((0, 0), text, font=font)
                 text_width = bbox[2] - bbox[0]
@@ -190,7 +166,7 @@ def transform():
         except Exception as e:
             print('Logging failed:', e)
 
-    return jsonify({'image': 'data:image/png;base64,' + out_b64, 'prompt': full_prompt})
+    return jsonify({'image': 'data:image/png;base64,' + out_b64, 'prompt': text})
 
 
 if __name__ == '__main__':
