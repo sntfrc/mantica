@@ -233,6 +233,8 @@ async function transformImage(dataUrl) {
   } catch (e) {
     console.error(e);
     video.play();
+    photo.style.display = 'none';
+    video.style.display = 'block';
     document.getElementById('controls').style.display = 'flex';
   }
   overlay.classList.remove('fade-animation');
@@ -249,7 +251,12 @@ document.getElementById('pickInput').onchange = () => {
     const reader = new FileReader();
     reader.onload = async e => {
       document.getElementById('modal').style.display = 'none';
+      photo.src = e.target.result;
+      photo.style.objectFit = 'contain';
+      video.style.display = 'none';
+      photo.style.display = 'block';
       await transformImage(e.target.result);
+      photo.style.objectFit = 'cover';
       document.getElementById('pickInput').value = '';
     };
     reader.readAsDataURL(file);
