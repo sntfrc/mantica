@@ -108,6 +108,8 @@ def transform():
 
     out_b64 = base64.b64encode(transformed).decode('utf-8')
 
+    text = full_prompt if full_prompt != DEFAULT_PROMPT else "(no prompt)"
+
     if logging_enabled:
         try:
             logs_dir = os.path.join(os.path.dirname(__file__), 'logs')
@@ -143,7 +145,6 @@ def transform():
 
             draw = ImageDraw.Draw(collage)
             font = ImageFont.load_default()
-            text = full_prompt if full_prompt != DEFAULT_PROMPT else "(no prompt)"
             if hasattr(draw, "textbbox"):
                 bbox = draw.textbbox((0, 0), text, font=font)
                 text_width = bbox[2] - bbox[0]
