@@ -97,11 +97,15 @@
       border: 1px solid #555;
       border-radius: 5px;
     }
+    #modalContent input[type="text"] {
+      padding: 8px;
+      font-size: 18px;
+    }
     #modalContent button {
       background: transparent;
       border: none;
       color: white;
-      font-size: 24px;
+      font-size: 28px;
     }
     #modalContent button:hover { opacity: 0.7; cursor: pointer; }
     #close {
@@ -213,8 +217,13 @@ document.getElementById('close').onclick = () => {
 };
 
 document.getElementById('reset').onclick = () => {
-  promptInput.value = '';
-  localStorage.setItem('mantica_prompt', '');
+  if (promptInput.value.includes('!')) {
+    promptInput.value = '!';
+    localStorage.setItem('mantica_prompt', '!');
+  } else {
+    promptInput.value = '';
+    localStorage.setItem('mantica_prompt', '');
+  }
 };
 
 promptInput.oninput = () => {
