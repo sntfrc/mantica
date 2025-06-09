@@ -156,6 +156,13 @@ let promptCaption = document.getElementById('promptCaption');
 
 promptInput.value = localStorage.getItem('mantica_prompt') || '';
 
+promptInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    promptInput.blur();
+  }
+});
+
 function isMobile() {
   return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
 }
