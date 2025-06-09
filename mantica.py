@@ -19,7 +19,7 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from PIL import Image, ImageDraw, ImageFont
 from waitress import serve
 
-DEFAULT_PROMPT = "make it look more like a professionally made picture"
+DEFAULT_PROMPT = "make this image look a bit surreal, by maintaining all the elements but adding something dreamy that makes it feel oniric in a way"
 
 app = Flask(__name__, template_folder=os.path.dirname(__file__))
 
