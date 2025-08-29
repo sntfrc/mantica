@@ -19,7 +19,9 @@ from flask import Flask, render_template, request, jsonify, send_from_directory
 from PIL import Image, ImageDraw, ImageFont
 from waitress import serve
 
-DEFAULT_PROMPT = "make this image look a bit surreal, by maintaining all the elements but adding something dreamy that makes it feel oniric in a way"
+DEFAULT_PROMPTS = [
+    "turn this photograph into a painting or drawing, in the style that fits the scene the most"
+]
 
 app = Flask(__name__, template_folder=os.path.dirname(__file__))
 
@@ -89,26 +91,35 @@ def transform():
 
     client = replicate.Client(api_token=REPLICATE_TOKEN)
 
-    full_prompt = prompt if prompt else DEFAULT_PROMPT
+    random_prompt = DEFAULT_PROMPTS[len(image_data_url) % len(DEFAULT_PROMPTS)]
+    full_prompt = prompt if prompt else random_prompt
 
-    # Parameters tuned similarly to the PHP version
-    result = client.run(
-        "black-forest-labs/flux-kontext-pro",
-        input={
-            "prompt": full_prompt,
-            "input_image": image_data_url,
-            "safety_tolerance": 6,
-            "output_format": "png",
-        },
-    )
+    try:
+        if "[DEBUG]" in full_prompt:
+            raise Exception("debugging the safety filter")
+        
+        result = client.run(
+            "black-forest-labs/flux-kontext-pro",
+            input={
+                "prompt": full_prompt,
+                "input_image": image_data_url,
+                "safety_tolerance": 6,
+                "output_format": "png",
+            },
+        )
 
-    # result is usually a URL; download image
-    output_url = result[0] if isinstance(result, list) else result
-    transformed = requests.get(output_url).content
+        # result is usually a URL; download image
+        output_url = result[0] if isinstance(result, list) else result
+        transformed = requests.get(output_url).content
 
-    out_b64 = base64.b64encode(transformed).decode('utf-8')
+        out_b64 = base64.b64encode(transformed).decode('utf-8')
+        problem = None
 
-    text = full_prompt if full_prompt != DEFAULT_PROMPT else "(no prompt)"
+    except Exception as e:
+        problem = e
+        result, output_url, transformed = None, None, None
+
+    text = full_prompt if prompt else "(no prompt)"
 
     if logging_enabled:
         try:
@@ -116,7 +127,6 @@ def transform():
             os.makedirs(logs_dir, exist_ok=True)
             timestamp = datetime.now().strftime('%Y%m%d-%H%M%S')
             fwd_header = request.headers.get('X-Forwarded-For', '')
-            print(request.headers)
             if fwd_header:
                 ip = fwd_header
             else:
@@ -128,7 +138,12 @@ def transform():
             header, b64data = image_data_url.split(',', 1)
             orig_bytes = base64.b64decode(b64data)
             orig_img = Image.open(BytesIO(orig_bytes)).convert('RGB')
-            trans_img = Image.open(BytesIO(transformed)).convert('RGB')
+
+            # decode transformed image
+            if transformed:
+                trans_img = Image.open(BytesIO(transformed)).convert('RGB')
+            else:
+                trans_img = orig_img
 
             landscape = orig_img.width >= orig_img.height and trans_img.width >= trans_img.height
             if landscape:
@@ -143,6 +158,9 @@ def transform():
                 collage = Image.new('RGB', (collage_width, collage_height))
                 collage.paste(orig_img, (0, 0))
                 collage.paste(trans_img, (orig_img.width, 0))
+            
+            if problem:
+                text = "[FILTER TRIGGERED] " + text
 
             draw = ImageDraw.Draw(collage)
             font = ImageFont.load_default()
@@ -165,9 +183,13 @@ def transform():
                 font=font,
             )
             final_img.save(os.path.join(logs_dir, filename), format='JPEG')
+
         except Exception as e:
             print('Logging failed:', e)
-
+    
+    if not result:
+        raise problem
+    
     return jsonify({'image': 'data:image/png;base64,' + out_b64, 'prompt': text})
 
 
