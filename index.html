@@ -25,8 +25,10 @@
       user-select: none;
       -webkit-touch-callout: none;
     }
-    #camera { position: relative; width: 100%; height: 100%; }
-    video, img { width: 100%; height: 100%; object-fit: cover; }
+    #camera { position: relative; width: 100%; height: 100%; background: black; }
+    #stage { position: absolute; inset: 0; width: 100vw; height: 100vh; margin: 0; }
+    #camera.square #stage { width: min(100vw, 100vh); height: min(100vw, 100vh); left: 50%; top: 50%; transform: translate(-50%, -50%); }
+    video, img { width: 100%; height: 100%; object-fit: cover; object-position: center center; }
     .mirror { transform: scaleX(-1); }
     #processingOverlay {
       position: absolute;
@@ -43,10 +45,7 @@
       0%, 100% { opacity: 0.2; }
       50% { opacity: 0.5; }
     }
-    .fade-animation {
-      animation: fadeToBlack 1s infinite;
-      display: block;
-    }
+    .fade-animation { animation: fadeToBlack 1s infinite; display: block; }
     #controls, #after {
       position: absolute;
       bottom: 20px;
@@ -76,9 +75,7 @@
       font-size: clamp(30px, 10vw, 50px);
     }
     #title { position: absolute; top: 10px; left: 10px; color: white; }
-    @media (max-width: 600px) {
-      #title { display:none; }
-    }
+    @media (max-width: 600px) { #title { display:none; } }
     #modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
     #modalContent {
       background: #222;
@@ -89,15 +86,13 @@
       flex-direction: column;
       gap: 10px;
       position: relative;
+      min-width: min(92vw, 520px);
     }
-    #modalContent input[type="text"],
-    #modalContent input[type="range"] {
+    #modalContent input[type="text"] {
       color: white;
       background: #333;
       border: 1px solid #555;
       border-radius: 5px;
-    }
-    #modalContent input[type="text"] {
       padding: 8px;
       font-size: 18px;
     }
@@ -105,20 +100,34 @@
       background: transparent;
       border: none;
       color: white;
-      font-size: 28px;
+      font-size: 22px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid #555;
     }
-    #modalContent button:hover { opacity: 0.7; cursor: pointer; }
-    #close {
-      position: static;
+    #modalContent button:hover { opacity: 0.8; cursor: pointer; }
+    #modeBadge {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      color: #fff;
+      background: rgba(128,0,128,0.6);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      letter-spacing: .3px;
     }
   </style>
 </head>
 <body>
   <h1 id="title">Mantica Camera</h1>
+  <div id="modeBadge" aria-live="polite"></div>
   <div id="camera">
-    <video id="video" autoplay playsinline></video>
-    <div id="processingOverlay"></div>
-    <img id="photo" style="display:none"/>
+    <div id="stage">
+      <video id="video" autoplay playsinline></video>
+      <div id="processingOverlay"></div>
+      <img id="photo" style="display:none"/>
+    </div>
   </div>
   <div id="controls">
     <button id="settings" aria-label="Settings"><i class="fa-solid fa-palette"></i></button>
@@ -135,7 +144,8 @@
   <div id="modal">
     <div id="modalContent">
       <input type="text" id="prompt" placeholder="Prompt" style="width:100%">
-      <div style="display:flex;align-items:center;gap:10px;justify-content:center;">
+      <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap">
+        <button id="modeToggle" aria-label="Toggle capture mode"><i class="fa-solid fa-square"></i></button>
         <button id="pick" aria-label="Choose Photo"><i class="fa-solid fa-image"></i></button>
         <button id="reset" aria-label="Reset"><i class="fa-solid fa-eraser"></i></button>
         <button id="close" aria-label="Close"><i class="fa-solid fa-circle-arrow-left"></i></button>
@@ -145,285 +155,99 @@
   </div>
 
 <script>
-let video = document.getElementById('video');
-let photo = document.getElementById('photo');
-let overlay = document.getElementById('processingOverlay');
+const video = document.getElementById('video');
+const photo = document.getElementById('photo');
+const overlay = document.getElementById('processingOverlay');
+const cameraEl = document.getElementById('camera');
 let stream;
 let facing = 'environment';
-let promptInput = document.getElementById('prompt');
+const promptInput = document.getElementById('prompt');
+const promptCaption = document.getElementById('promptCaption');
+const isAndroid = /Android/i.test(navigator.userAgent);
+const MODE_KEY = 'mantica_mode';
+let captureMode = localStorage.getItem(MODE_KEY) || 'full';
+const modeToggleBtn = document.getElementById('modeToggle');
+const modeBadge = document.getElementById('modeBadge');
 
-let promptCaption = document.getElementById('promptCaption');
+function setMode(mode){ captureMode = mode; localStorage.setItem(MODE_KEY, captureMode); updateModeUI(); }
+function toggleMode(){ setMode(captureMode === 'full' ? 'square' : 'full'); }
+function updateModeUI(){
+  const isSquare = captureMode === 'square';
+  modeToggleBtn.innerHTML = isSquare ? '<i class="fa-solid fa-square"></i>' : '<i class="fa-regular fa-square"></i>';
+  modeBadge.textContent = isSquare ? 'Mode: Square' : 'Mode: Full';
+  cameraEl.classList.toggle('square', isSquare);
+}
+modeToggleBtn.addEventListener('click', toggleMode);
+updateModeUI();
 
 promptInput.value = localStorage.getItem('mantica_prompt') || '';
+function isMobile(){ return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent); }
 
-promptInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') {
-    e.preventDefault();
-    promptInput.blur();
-  }
-});
-
-function isMobile() {
-  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-}
-
-const isAndroid = /Android/i.test(navigator.userAgent);
-
-
-async function fileToDataURL(file) {
-  if (window.createImageBitmap) {
-    try {
-      const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
-      const canvas = document.createElement('canvas');
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-      canvas.getContext('2d').drawImage(bitmap, 0, 0);
-      bitmap.close();
-      return canvas.toDataURL('image/png');
-    } catch (e) {
-      console.warn('createImageBitmap failed, falling back', e);
-    }
-  }
-  return new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result);
-    reader.readAsDataURL(file);
-  });
-}
-  
-async function startCamera() {
-  if (stream) {
-    stream.getTracks().forEach(t => t.stop());
-  }
+async function startCamera(){
+  if (stream) stream.getTracks().forEach(t => t.stop());
   stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: facing}});
   video.srcObject = stream;
   await video.play();
-  if (facing === 'user') {
-    video.classList.add('mirror');
-  } else {
-    video.classList.remove('mirror');
-  }
+  video.classList.toggle('mirror', facing==='user');
 }
-
 startCamera();
-if (isMobile() && document.documentElement.requestFullscreen) {
-  document.documentElement.requestFullscreen().catch(() => {});
-}
 
-document.getElementById('switch').onclick = () => {
-  facing = facing === 'environment' ? 'user' : 'environment';
-  startCamera();
-};
+if (isMobile() && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
 
-document.getElementById('settings').onclick = () => {
-  document.getElementById('modal').style.display = 'flex';
-};
+document.getElementById('switch').onclick = () => { facing = facing==='environment'?'user':'environment'; startCamera(); };
+document.getElementById('settings').onclick = () => { document.getElementById('modal').style.display = 'flex'; };
+document.getElementById('close').onclick = () => { document.getElementById('modal').style.display = 'none'; };
+document.getElementById('reset').onclick = () => { promptInput.value=''; localStorage.setItem('mantica_prompt',''); };
+promptInput.oninput = () => { localStorage.setItem('mantica_prompt', promptInput.value); };
 
-document.getElementById('close').onclick = () => {
-  document.getElementById('modal').style.display = 'none';
-};
+function getCoverMapping(displayWidth, displayHeight, vw, vh){ const scale=Math.max(displayWidth/vw,displayHeight/vh); const mappedW=vw*scale; const mappedH=vh*scale; const tx=(displayWidth-mappedW)/2; const ty=(displayHeight-mappedH)/2; return{scale,tx,ty}; }
 
-document.getElementById('reset').onclick = () => {
-  if (promptInput.value.includes('!')) {
-    promptInput.value = '!';
-    localStorage.setItem('mantica_prompt', '!');
-  } else {
-    promptInput.value = '';
-    localStorage.setItem('mantica_prompt', '');
-  }
-};
+async function transformImage(dataUrl){ overlay.classList.add('fade-animation'); document.getElementById('controls').style.display='none'; document.getElementById('after').style.display='none'; overlay.style.display='block'; await new Promise(requestAnimationFrame); video.pause(); try{ let res=await fetch('transform',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:dataUrl,prompt:promptInput.value})}); let json=await res.json(); if(!res.ok||json.error) throw new Error(json.error||'processing error'); photo.src=json.image; video.style.display='none'; photo.style.display='block'; cameraEl.classList.toggle('square', captureMode==='square'); const afterButtons=document.getElementById('after'); afterButtons.style.display='flex'; promptCaption.textContent=json.prompt||''; if(json.prompt){ promptCaption.style.display='block'; await new Promise(requestAnimationFrame); const captionHeight=promptCaption.offsetHeight; afterButtons.style.bottom=`${20+captionHeight*0.7}px`; } else { promptCaption.style.display='none'; afterButtons.style.bottom='20px'; } }catch(e){ console.error(e); video.play(); photo.style.display='none'; video.style.display='block'; document.getElementById('controls').style.display='flex'; } overlay.classList.remove('fade-animation'); overlay.style.display='none'; }
 
-promptInput.oninput = () => {
-  localStorage.setItem('mantica_prompt', promptInput.value);
-};
-async function transformImage(dataUrl) {
-  overlay.classList.add('fade-animation');
-  document.getElementById('controls').style.display = 'none';
-  document.getElementById('after').style.display = 'none';
-  overlay.style.display = 'block';
-  await new Promise(requestAnimationFrame);
-  video.pause();
-  let prompt = promptInput.value;
+async function captureSquare(){ const displayWidth=video.clientWidth, displayHeight=video.clientHeight; const side=Math.min(displayWidth,displayHeight); let canvas=document.createElement('canvas'); canvas.width=side; canvas.height=side; const ctx=canvas.getContext('2d'); const vw=video.videoWidth, vh=video.videoHeight; const {scale,tx,ty}=getCoverMapping(displayWidth,displayHeight,vw,vh); const sqLeft=(displayWidth-side)/2, sqTop=(displayHeight-side)/2; let sx=(sqLeft-tx)/scale, sy=(sqTop-ty)/scale, sWidth=side/scale, sHeight=side/scale; if(facing==='user'){ ctx.translate(side,0); ctx.scale(-1,1);} ctx.drawImage(video,sx,sy,sWidth,sHeight,0,0,side,side); let dataUrl=canvas.toDataURL('image/png'); await transformImage(dataUrl); }
+async function captureFull(){ let canvas=document.createElement('canvas'); const displayWidth=video.clientWidth, displayHeight=video.clientHeight; canvas.width=displayWidth; canvas.height=displayHeight; const vw=video.videoWidth, vh=video.videoHeight; const elementRatio=displayWidth/displayHeight; const videoRatio=vw/vh; let sx=0, sy=0, sWidth=vw, sHeight=vh; if(videoRatio>elementRatio){ sWidth=vh*elementRatio; sx=(vw-sWidth)/2;} else { sHeight=vw/elementRatio; sy=(vh-sHeight)/2;} const ctx=canvas.getContext('2d'); if(facing==='user'){ ctx.translate(displayWidth,0); ctx.scale(-1,1);} ctx.drawImage(video,sx,sy,sWidth,sHeight,0,0,displayWidth,displayHeight); let dataUrl=canvas.toDataURL('image/png'); await transformImage(dataUrl); }
+async function handleCapture(){ overlay.classList.add('fade-animation'); document.getElementById('controls').style.display='none'; document.getElementById('after').style.display='none'; overlay.style.display='block'; await new Promise(requestAnimationFrame); video.pause(); try{ if(captureMode==='square'){ await captureSquare(); } else { await captureFull(); } } finally {} }
+document.getElementById('capture').onclick=handleCapture;
+document.getElementById('pick').onclick=()=>{ document.getElementById('pickInput').click(); };
+document.getElementById('pickInput').onchange=async()=>{ const file=document.getElementById('pickInput').files[0]; if(!file) return; document.getElementById('modal').style.display='none'; const previewUrl=URL.createObjectURL(file); photo.src=previewUrl; photo.style.objectFit='contain'; cameraEl.classList.toggle('square', captureMode==='square'); video.style.display='none'; photo.style.display='block'; const dataUrl=await new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsDataURL(file);}); await transformImage(dataUrl); photo.style.objectFit='cover'; document.getElementById('pickInput').value=''; URL.revokeObjectURL(previewUrl); };
+document.getElementById('back').onclick=()=>{ photo.style.display='none'; video.style.display='block'; const afterButtons=document.getElementById('after'); afterButtons.style.display='none'; afterButtons.style.bottom='20px'; document.getElementById('controls').style.display='flex'; promptCaption.style.display='none'; cameraEl.classList.toggle('square', captureMode==='square'); video.play(); };
 
-  try {
-    let res = await fetch('transform', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({image: dataUrl, prompt: prompt})
-    });
-    let json = await res.json();
-    if (!res.ok || json.error) throw new Error(json.error || 'processing error');
-    photo.src = json.image;
-    video.style.display = 'none';
-    photo.style.display = 'block';
-    const afterButtons = document.getElementById('after');
-    afterButtons.style.display = 'flex';
-    promptCaption.textContent = json.prompt || '';
-    if (json.prompt) {
-      promptCaption.style.display = 'block';
-      await new Promise(requestAnimationFrame);
-      const captionHeight = promptCaption.offsetHeight;
-      afterButtons.style.bottom = `${20 + captionHeight * 0.7}px`;
-    } else {
-      promptCaption.style.display = 'none';
-      afterButtons.style.bottom = '20px';
-    }
-  } catch (e) {
-    console.error(e);
-    video.play();
-    photo.style.display = 'none';
-    video.style.display = 'block';
-    document.getElementById('controls').style.display = 'flex';
-  }
-  overlay.classList.remove('fade-animation');
-  overlay.style.display = 'none';
-}
-
-document.getElementById('pick').onclick = () => {
-  document.getElementById('pickInput').click();
-};
-
-document.getElementById('pickInput').onchange = async () => {
-  const file = document.getElementById('pickInput').files[0];
-  if (!file) return;
-  document.getElementById('modal').style.display = 'none';
-  const previewUrl = URL.createObjectURL(file);
-  photo.src = previewUrl;
-  photo.style.objectFit = 'contain';
-  video.style.display = 'none';
-  photo.style.display = 'block';
-  const dataUrl = await fileToDataURL(file);
-  await transformImage(dataUrl);
-  photo.style.objectFit = 'cover';
-  document.getElementById('pickInput').value = '';
-  URL.revokeObjectURL(previewUrl);
-};
-
-document.getElementById('capture').onclick = async () => {
-  overlay.classList.add('fade-animation');
-  document.getElementById('controls').style.display = 'none';
-  document.getElementById('after').style.display = 'none';
-  overlay.style.display = 'block';
-  // Let the DOM update so the buttons disappear before heavy processing
-  await new Promise(requestAnimationFrame);
-  video.pause();
-  let canvas = document.createElement('canvas');
-  const displayWidth = video.clientWidth;
-  const displayHeight = video.clientHeight;
-  canvas.width = displayWidth;
-  canvas.height = displayHeight;
-
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-  const elementRatio = displayWidth / displayHeight;
-  const videoRatio = vw / vh;
-
-  let sx = 0, sy = 0, sWidth = vw, sHeight = vh;
-  if (videoRatio > elementRatio) {
-    // Video is wider than the display area; crop the sides
-    sWidth = vh * elementRatio;
-    sx = (vw - sWidth) / 2;
-  } else {
-    // Video is taller than the display area; crop the top and bottom
-    sHeight = vw / elementRatio;
-    sy = (vh - sHeight) / 2;
-  }
-  const ctx = canvas.getContext('2d');
-  if (facing === 'user') {
-    ctx.translate(displayWidth, 0);
-    ctx.scale(-1, 1);
-  }
-  ctx.drawImage(
-    video,
-    sx,
-    sy,
-    sWidth,
-    sHeight,
-    0,
-    0,
-    displayWidth,
-    displayHeight
-  );
-    let dataUrl = canvas.toDataURL("image/png");
-    await transformImage(dataUrl);
-};
-
-document.getElementById('back').onclick = () => {
-  photo.style.display = 'none';
-  video.style.display = 'block';
-  const afterButtons = document.getElementById('after');
-  afterButtons.style.display = 'none';
-  afterButtons.style.bottom = '20px';
-  document.getElementById('controls').style.display = 'flex';
-  promptCaption.style.display = 'none';
-  video.play();
-};
+function dataURLToBlob(dataURL){ const [header,data]=dataURL.split(','); const mime=header.match(/:(.*?);/)[1]; const bytes=atob(data); const arr=new Uint8Array(bytes.length); for(let i=0;i<bytes.length;i++){ arr[i]=bytes.charCodeAt(i);} return new Blob([arr],{type:mime}); }
+async function getBlobFromSrc(src){ if(src.startsWith('data:')) return dataURLToBlob(src); try{ const r=await fetch(src); return await r.blob(); }catch(e){ console.error('Failed to fetch image for saving', e); throw e; } }
 
 document.getElementById('save').onclick = async () => {
-  const now = new Date();
-  const pad = n => n.toString().padStart(2, '0');
-  const ts =
-    now.getFullYear().toString() +
-    pad(now.getMonth() + 1) +
-    pad(now.getDate()) +
-    '-' +
-    pad(now.getHours()) +
-    pad(now.getMinutes()) +
-    pad(now.getSeconds());
+  try {
+    const blob = await getBlobFromSrc(photo.src);
+    const now = new Date();
+    const pad = n => n.toString().padStart(2,'0');
+    const ts = `${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const fileName = `mantica-${captureMode}-${ts}.png`;
+    const file = new File([blob], fileName, { type: blob.type || 'image/png' });
 
-  const blob = dataURLToBlob(photo.src);
-  const fileName = `mantica-${ts}.png`;
-
-  const file = new File([blob], fileName, { type: blob.type });
-  if (navigator.share  && !isAndroid) {
-    try {
-      if (!navigator.canShare || navigator.canShare({ files: [file] })) {
-        await navigator.share({ files: [file], title: fileName });
-        return;
+    if (navigator.share && !isAndroid) {
+      try {
+        if (!navigator.canShare || navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: fileName });
+          return;
+        }
+      } catch (e) {
+        console.warn('Share failed, falling back to download', e);
       }
-    } catch (e) {
-      console.warn('Share failed, falling back to download', e);
     }
-  }
 
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch (e) {
+    console.error(e);
+  }
 };
-
-function dataURLToBlob(dataURL) {
-  const [header, data] = dataURL.split(',');
-  const mime = header.match(/:(.*?);/)[1];
-  const bytes = atob(data);
-  const arr = new Uint8Array(bytes.length);
-  for (let i = 0; i < bytes.length; i++) {
-    arr[i] = bytes.charCodeAt(i);
-  }
-  return new Blob([arr], { type: mime });
-}
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('service-worker.js').catch(() => {});
-}
-
-document.addEventListener('contextmenu', e => {
-  if (!e.target.closest('#modal')) e.preventDefault();
-});
-document.addEventListener(
-  'touchmove',
-  e => {
-    if (!e.target.closest('#modal')) e.preventDefault();
-  },
-  { passive: false }
-);
-document.addEventListener('gesturestart', e => {
-  if (!e.target.closest('#modal')) e.preventDefault();
-});
 </script>
 </body>
 </html>
+
