@@ -99,12 +99,12 @@ def transform():
             raise Exception("debugging the safety filter")
         
         result = client.run(
-            "black-forest-labs/flux-kontext-pro",
+            "google/nano-banana",
             input={
                 "prompt": full_prompt,
-                "input_image": image_data_url,
-                "safety_tolerance": 6,
-                "output_format": "png",
+                "image_input": [image_data_url],
+                "aspect_ratio": "match_input_image",
+                "output_format": "png"
             },
         )
 
