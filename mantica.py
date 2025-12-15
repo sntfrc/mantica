@@ -52,11 +52,8 @@ if os.path.exists(CONFIG_PATH):
             elif key == 'logging':
                 WAITRESS_LOGGING = value.lower() == 'true'
 
-# Default negative prompt used for image generation
-NEGATIVE_PROMPT = "nsfw, naked"
-
 # Terms removed from user prompts before sending to the model
-BAN_TERMS = ["nude", "naked", "blood", "dead", "nsfw", "nude"]
+BAN_TERMS = [] # "nude", "naked", "blood", "dead", "nsfw", "nude"]
 
 @app.route('/')
 def index():
@@ -99,12 +96,13 @@ def transform():
             raise Exception("debugging the safety filter")
         
         result = client.run(
-            "google/nano-banana",
+            "qwen/qwen-image-edit",
             input={
                 "prompt": full_prompt,
-                "image_input": [image_data_url],
+                "image": image_data_url,
                 "aspect_ratio": "match_input_image",
-                "output_format": "png"
+                "output_format": "png",
+                "disable_safety_checker": True
             },
         )
 
