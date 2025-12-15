@@ -96,10 +96,10 @@ def transform():
             raise Exception("debugging the safety filter")
         
         result = client.run(
-            "qwen/qwen-image-edit",
+            "qwen/qwen-image-edit-plus",
             input={
                 "prompt": full_prompt,
-                "image": image_data_url,
+                "image": [image_data_url],
                 "aspect_ratio": "match_input_image",
                 "output_format": "png",
                 "disable_safety_checker": True
