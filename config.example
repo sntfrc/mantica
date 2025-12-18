@@ -1,4 +1,5 @@
-r8_token=YOUR_REPLICATE_TOKEN
+hf_token=YOUR_HUGGINGFACE_TOKEN
+model=Qwen/Qwen-Image-Edit
 host=0.0.0.0
 port=8073
 logging=false

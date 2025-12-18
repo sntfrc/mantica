@@ -4,13 +4,13 @@
 # Unauthorized copying, distribution, or use of this software in whole or in part
 # is prohibited without the express written permission of the copyright holder.
 #
-# pip install flask replicate requests pillow waitress
+# pip install flask huggingface_hub requests pillow waitress
 #
 
+import io
 import os
 import base64
 import re
-import replicate
 import requests
 import logging
 from datetime import datetime
@@ -18,6 +18,7 @@ from io import BytesIO
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from PIL import Image, ImageDraw, ImageFont
 from waitress import serve
+from huggingface_hub import InferenceClient
 
 DEFAULT_PROMPTS = [
     "turn this photograph into a painting or drawing, in the style that fits the scene the most"
@@ -25,9 +26,10 @@ DEFAULT_PROMPTS = [
 
 app = Flask(__name__, template_folder=os.path.dirname(__file__))
 
-# Load configuration (Replicate token, host and port)
+# Load configuration (token, host and port)
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), 'config')
-REPLICATE_TOKEN = None
+HF_TOKEN = None
+MODEL="Qwen/Qwen-Image-Edit"
 HOST = '0.0.0.0'
 PORT = 8073
 WAITRESS_LOGGING = False
@@ -40,8 +42,10 @@ if os.path.exists(CONFIG_PATH):
             key, value = line.split('=', 1)
             key = key.strip()
             value = value.strip()
-            if key == 'r8_token':
-                REPLICATE_TOKEN = value
+            if key == "model":
+                MODEL = value
+            elif key == 'hf_token':
+                HF_TOKEN = value
             elif key == 'host':
                 HOST = value
             elif key == 'port':
@@ -73,8 +77,6 @@ def favicon():
 
 @app.route('/transform', methods=['POST'])
 def transform():
-    if replicate is None:
-        return jsonify({'error': 'Replicate library not installed'}), 500
     data = request.get_json()
     image_data_url = data.get('image', '')
     user_prompt = data.get('prompt', '')
@@ -86,7 +88,7 @@ def transform():
         prompt = re.sub(r'\b' + re.escape(term) + r'\b', '', prompt, flags=re.IGNORECASE)
     prompt = ' '.join(prompt.split())
 
-    client = replicate.Client(api_token=REPLICATE_TOKEN)
+    client = InferenceClient(provider="auto", api_key=HF_TOKEN)
 
     random_prompt = DEFAULT_PROMPTS[len(image_data_url) % len(DEFAULT_PROMPTS)]
     full_prompt = prompt if prompt else random_prompt
@@ -94,23 +96,24 @@ def transform():
     try:
         if "[DEBUG]" in full_prompt:
             raise Exception("debugging the safety filter")
-        
-        result = client.run(
-            "qwen/qwen-image-edit-plus",
-            input={
-                "prompt": full_prompt,
-                "image": [image_data_url],
-                "aspect_ratio": "match_input_image",
-                "output_format": "png",
-                "disable_safety_checker": True
-            },
+       
+        header, encoded = image_data_url.split(",", 1)
+        image_bytes = base64.b64decode(encoded)
+        original_image = Image.open(io.BytesIO(image_bytes))
+ 
+        transformed = client.image_to_image(
+            original_image,
+            model=MODEL,
+            prompt=full_prompt,
+            enable_safety_checker=False
         )
 
-        # result is usually a URL; download image
-        output_url = result[0] if isinstance(result, list) else result
-        transformed = requests.get(output_url).content
+        print(transformed)
+        buffer = io.BytesIO()
+        transformed.save(buffer, format="png")
+        buffer.seek(0)
+        result = base64.b64encode(buffer.read()).decode('utf-8')
 
-        out_b64 = base64.b64encode(transformed).decode('utf-8')
         problem = None
 
     except Exception as e:
@@ -188,7 +191,7 @@ def transform():
     if not result:
         raise problem
     
-    return jsonify({'image': 'data:image/png;base64,' + out_b64, 'prompt': text})
+    return jsonify({'image': 'data:image/png;base64,' + result, 'prompt': text})
 
 
 if __name__ == '__main__':
