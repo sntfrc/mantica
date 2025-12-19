@@ -20,7 +20,7 @@ Here's how it works:
 
 1. You choose a natural language prompt.
 2. You take a photo.
-3. The app uses an **img2img** to understand the content and the natural language.
+3. The app uses an **image to image** model to understand the content and the natural language.
 4. You get a creatively remade picture.
 
 The result? A picture that is yours, and yet not yours. It's a semantic reinterpretation of what you saw, shaped by the lens of artificial imagination.
@@ -30,7 +30,8 @@ The result? A picture that is yours, and yet not yours. It's a semantic reinterp
 1. Run ```./setup-venv.sh```
 3. Create a `config` file in the repository root containing, for example:
    ```
-   r8_token=YOUR_REPLICATE_TOKEN
+   hf_token=YOUR_HUGGINGFACE_TOKEN
+   model=Qwen/Qwen-Image-Edit
    host=0.0.0.0
    port=8073
    logging=false
