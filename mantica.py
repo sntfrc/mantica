@@ -142,7 +142,7 @@ def transform():
 
             # decode transformed image
             if transformed:
-                trans_img = Image.open(BytesIO(transformed)).convert('RGB')
+                trans_img = transformed.convert('RGB')
             else:
                 trans_img = orig_img
 
