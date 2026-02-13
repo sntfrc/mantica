@@ -44,6 +44,8 @@ if os.path.exists(CONFIG_PATH):
             value = value.strip()
             if key == "model":
                 MODEL = value
+            elif key == 'provider':
+                PROVIDER = value
             elif key == 'hf_token':
                 HF_TOKEN = value
             elif key == 'host':
@@ -88,7 +90,7 @@ def transform():
         prompt = re.sub(r'\b' + re.escape(term) + r'\b', '', prompt, flags=re.IGNORECASE)
     prompt = ' '.join(prompt.split())
 
-    client = InferenceClient(provider="auto", api_key=HF_TOKEN)
+    client = InferenceClient(provider=PROVIDER, api_key=HF_TOKEN)
 
     random_prompt = DEFAULT_PROMPTS[len(image_data_url) % len(DEFAULT_PROMPTS)]
     full_prompt = prompt if prompt else random_prompt
@@ -99,7 +101,8 @@ def transform():
        
         header, encoded = image_data_url.split(",", 1)
         image_bytes = base64.b64decode(encoded)
-        original_image = Image.open(io.BytesIO(image_bytes))
+        # For some providers: original_image = Image.open(io.BytesIO(image_bytes))
+        original_image = image_bytes
  
         transformed = client.image_to_image(
             original_image,

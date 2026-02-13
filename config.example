@@ -1,5 +1,6 @@
 hf_token=YOUR_HUGGINGFACE_TOKEN
 model=Qwen/Qwen-Image-Edit
+provider=auto
 host=0.0.0.0
 port=8073
 logging=false
